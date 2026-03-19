@@ -2,7 +2,7 @@ import axios from 'axios'
 import type { ApiResponse, StockQuote, IndexQuote, MacroDataPoint, CryptoListing, CryptoGlobal, ForexPair, Commodity, NewsArticle, SentimentData, MarketNewsItem } from '../types'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '/api',
+  baseURL: '/api',
   timeout: 10000,
 })
 
