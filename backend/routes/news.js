@@ -1,31 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const NodeCache = require('node-cache');
-const newsService = require('../services/newsService');
+const { getNews } = require('../services/massiveService');
 
 const cache = new NodeCache({ stdTTL: 600 });
 
-const mapArticles = (articles) =>
-  articles.map((article) => ({
+function mapArticle(article) {
+  return {
     title: article.title,
-    description: article.description,
-    url: article.url,
-    source: article.source.name,
-    publishedAt: article.publishedAt,
-    urlToImage: article.urlToImage
-  }));
+    description: article.description || article.title,
+    url: article.article_url,
+    source: article.publisher?.name || 'Unknown',
+    publishedAt: article.published_utc,
+    urlToImage: article.image_url || null,
+  };
+}
 
 router.get('/headlines', async (req, res) => {
   try {
     const cacheKey = 'news_headlines';
     const cached = cache.get(cacheKey);
+    if (cached) return res.json({ cached: true, data: cached });
 
-    if (cached) {
-      return res.json({ cached: true, data: cached });
-    }
-
-    const response = await newsService.getEconomyNews();
-    const data = mapArticles(response.articles || []);
+    const articles = await getNews({ limit: 20 });
+    const data = articles.map(mapArticle);
 
     cache.set(cacheKey, data);
     return res.json({ cached: false, data });
@@ -38,13 +36,10 @@ router.get('/top', async (req, res) => {
   try {
     const cacheKey = 'news_top';
     const cached = cache.get(cacheKey);
+    if (cached) return res.json({ cached: true, data: cached });
 
-    if (cached) {
-      return res.json({ cached: true, data: cached });
-    }
-
-    const response = await newsService.getTopHeadlines();
-    const data = mapArticles(response.articles || []);
+    const articles = await getNews({ ticker: 'SPY', limit: 20 });
+    const data = articles.map(mapArticle);
 
     cache.set(cacheKey, data);
     return res.json({ cached: false, data });

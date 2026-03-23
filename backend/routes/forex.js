@@ -1,54 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const NodeCache = require('node-cache');
-const finnhubService = require('../services/finnhubService');
+const { getGroupedLatestDay } = require('../services/massiveService');
 
-const cache = new NodeCache({ stdTTL: 120 });
+const cache = new NodeCache({ stdTTL: 60 });
 
 const FOREX_PAIRS = [
-  { pair: 'EUR/USD', base: 'EUR', type: 'inverse' },
-  { pair: 'GBP/USD', base: 'GBP', type: 'inverse' },
-  { pair: 'USD/JPY', base: 'JPY', type: 'direct' },
-  { pair: 'USD/CHF', base: 'CHF', type: 'direct' },
-  { pair: 'AUD/USD', base: 'AUD', type: 'inverse' },
-  { pair: 'USD/CAD', base: 'CAD', type: 'direct' },
-  { pair: 'USD/CNY', base: 'CNY', type: 'direct' },
-  { pair: 'USD/KRW', base: 'KRW', type: 'direct' },
-  { pair: 'USD/INR', base: 'INR', type: 'direct' },
-  { pair: 'USD/MXN', base: 'MXN', type: 'direct' },
-  { pair: 'USD/BRL', base: 'BRL', type: 'direct' }
+  { pair: 'EUR/USD', ticker: 'C:EURUSD' },
+  { pair: 'GBP/USD', ticker: 'C:GBPUSD' },
+  { pair: 'USD/JPY', ticker: 'C:USDJPY' },
+  { pair: 'USD/CHF', ticker: 'C:USDCHF' },
+  { pair: 'AUD/USD', ticker: 'C:AUDUSD' },
+  { pair: 'USD/CAD', ticker: 'C:USDCAD' },
+  { pair: 'NZD/USD', ticker: 'C:NZDUSD' },
+  { pair: 'EUR/GBP', ticker: 'C:EURGBP' },
 ];
-
-// Reference rates as fallback when Finnhub forex endpoint requires premium
-const FALLBACK_RATES = {
-  EUR: 0.9210, GBP: 0.7890, JPY: 149.50, CHF: 0.8780,
-  AUD: 1.5340, CAD: 1.3560, CNY: 7.2400, KRW: 1320.00,
-  INR: 83.10, MXN: 17.15, BRL: 4.97
-};
 
 router.get('/rates', async (req, res) => {
   try {
     const cacheKey = 'forex_rates';
     const cached = cache.get(cacheKey);
+    if (cached) return res.json({ cached: true, data: cached });
 
-    if (cached) {
-      return res.json({ cached: true, data: cached });
-    }
+    const map = await getGroupedLatestDay('global', 'fx');
 
-    let quote;
-    try {
-      const response = await finnhubService.getForexRates();
-      quote = response.quote || response;
-    } catch (e) {
-      quote = FALLBACK_RATES;
-    }
-
-    const data = FOREX_PAIRS.map(({ pair, base, type }) => {
-      const rawRate = quote[base];
-      if (!rawRate) return { pair, rate: 0 };
-      const rate = type === 'inverse' ? 1 / rawRate : rawRate;
-      return { pair, rate };
-    });
+    const data = FOREX_PAIRS.map(({ pair, ticker }) => {
+      const bar = map.get(ticker);
+      if (!bar) return null;
+      const change = bar.c - bar.o;
+      const changePercent = bar.o !== 0 ? (change / bar.o) * 100 : 0;
+      return {
+        pair,
+        rate: bar.c,
+        change: parseFloat(change.toFixed(5)),
+        changePercent: parseFloat(changePercent.toFixed(4)),
+      };
+    }).filter(Boolean);
 
     cache.set(cacheKey, data);
     return res.json({ cached: false, data });
