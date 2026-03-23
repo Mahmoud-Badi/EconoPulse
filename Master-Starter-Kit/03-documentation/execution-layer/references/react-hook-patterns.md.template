@@ -1,0 +1,224 @@
+# React Data Fetching Patterns -- {{PROJECT_NAME}}
+
+> Standard hook patterns for data fetching, mutations, and caching.
+> All hooks follow a consistent API envelope unwrap pattern.
+
+---
+
+## API Envelope
+
+The backend wraps all responses in a standard envelope. **Always unwrap it.**
+
+```typescript
+// Backend response shape
+interface ApiResponse<T> {
+  {{API_ENVELOPE_DATA_KEY}}: T;
+  {{API_ENVELOPE_META_KEY}}?: { total: number; page: number; pageSize: number };
+  {{API_ENVELOPE_MESSAGE_KEY}}?: string;
+}
+
+// CORRECT: unwrap the envelope
+const items = response.{{API_ENVELOPE_DATA_KEY}};
+
+// WRONG: use response directly (will cause "undefined" bugs)
+const items = response;
+```
+
+---
+
+## Pattern 1: List Hook (Pagination + Search + Filters)
+
+<!-- IF {{QUERY_LIBRARY}} == "@tanstack/react-query" -->
+```typescript
+import { useQuery, keepPreviousData } from '{{QUERY_LIBRARY}}';
+import { {{API_CLIENT}} } from '{{API_CLIENT_PATH}}';
+
+interface Use{{Resource}}ListParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export function use{{Resource}}List(params: Use{{Resource}}ListParams = {}) {
+  const { page = 1, pageSize = {{DEFAULT_PAGE_SIZE}}, search, status, sortBy, sortOrder } = params;
+
+  return useQuery({
+    queryKey: ['{{resourcePlural}}', { page, pageSize, search, status, sortBy, sortOrder }],
+    queryFn: async () => {
+      const response = await {{API_CLIENT}}.get('/{{apiPrefix}}/{{resourcePlural}}', {
+        params: { page, pageSize, search, status, sortBy, sortOrder },
+      });
+      return response.{{API_ENVELOPE_DATA_KEY}};  // unwrap envelope
+    },
+    placeholderData: keepPreviousData,  // smooth pagination transitions
+  });
+}
+```
+<!-- ENDIF -->
+
+<!-- IF {{QUERY_LIBRARY}} == "swr" -->
+```typescript
+import useSWR from 'swr';
+import { {{API_CLIENT}} } from '{{API_CLIENT_PATH}}';
+
+export function use{{Resource}}List(params: Use{{Resource}}ListParams = {}) {
+  const queryString = new URLSearchParams(params as any).toString();
+  const key = `/{{apiPrefix}}/{{resourcePlural}}?${queryString}`;
+
+  return useSWR(key, async (url) => {
+    const response = await {{API_CLIENT}}.get(url);
+    return response.{{API_ENVELOPE_DATA_KEY}};
+  }, {
+    keepPreviousData: true,
+  });
+}
+```
+<!-- ENDIF -->
+
+---
+
+## Pattern 2: Detail Hook
+
+```typescript
+export function use{{Resource}}(id: string | undefined) {
+  return useQuery({
+    queryKey: ['{{resourceSingular}}', id],
+    queryFn: async () => {
+      const response = await {{API_CLIENT}}.get(`/{{apiPrefix}}/{{resourcePlural}}/${id}`);
+      return response.{{API_ENVELOPE_DATA_KEY}};
+    },
+    enabled: !!id,  // don't fetch until we have an ID
+  });
+}
+```
+
+---
+
+## Pattern 3: Create Mutation
+
+```typescript
+import { useMutation, useQueryClient } from '{{QUERY_LIBRARY}}';
+
+export function useCreate{{Resource}}() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Create{{Resource}}Dto) => {
+      const response = await {{API_CLIENT}}.post('/{{apiPrefix}}/{{resourcePlural}}', data);
+      return response.{{API_ENVELOPE_DATA_KEY}};
+    },
+    onSuccess: () => {
+      // Invalidate the list so it refetches
+      queryClient.invalidateQueries({ queryKey: ['{{resourcePlural}}'] });
+    },
+  });
+}
+```
+
+---
+
+## Pattern 4: Update Mutation
+
+```typescript
+export function useUpdate{{Resource}}() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Update{{Resource}}Dto }) => {
+      const response = await {{API_CLIENT}}.patch(`/{{apiPrefix}}/{{resourcePlural}}/${id}`, data);
+      return response.{{API_ENVELOPE_DATA_KEY}};
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate both the list and the specific item
+      queryClient.invalidateQueries({ queryKey: ['{{resourcePlural}}'] });
+      queryClient.invalidateQueries({ queryKey: ['{{resourceSingular}}', variables.id] });
+    },
+  });
+}
+```
+
+---
+
+## Pattern 5: Delete Mutation
+
+```typescript
+export function useDelete{{Resource}}() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await {{API_CLIENT}}.delete(`/{{apiPrefix}}/{{resourcePlural}}/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['{{resourcePlural}}'] });
+    },
+  });
+}
+```
+
+---
+
+## Pattern 6: Infinite Query (Load More / Infinite Scroll)
+
+```typescript
+import { useInfiniteQuery } from '{{QUERY_LIBRARY}}';
+
+export function use{{Resource}}Infinite(params: Omit<Use{{Resource}}ListParams, 'page'> = {}) {
+  return useInfiniteQuery({
+    queryKey: ['{{resourcePlural}}', 'infinite', params],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await {{API_CLIENT}}.get('/{{apiPrefix}}/{{resourcePlural}}', {
+        params: { ...params, page: pageParam, pageSize: {{DEFAULT_PAGE_SIZE}} },
+      });
+      return response.{{API_ENVELOPE_DATA_KEY}};
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // Assumes meta.total is available in the envelope
+      const totalLoaded = allPages.length * {{DEFAULT_PAGE_SIZE}};
+      return totalLoaded < lastPage.meta?.total ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
+}
+```
+
+---
+
+## Pattern 7: Prefetching (for Hover/Navigation)
+
+```typescript
+export function usePrefetch{{Resource}}() {
+  const queryClient = useQueryClient();
+
+  return (id: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['{{resourceSingular}}', id],
+      queryFn: async () => {
+        const response = await {{API_CLIENT}}.get(`/{{apiPrefix}}/{{resourcePlural}}/${id}`);
+        return response.{{API_ENVELOPE_DATA_KEY}};
+      },
+      staleTime: 30_000, // don't re-prefetch within 30s
+    });
+  };
+}
+
+// Usage: onMouseEnter on table rows or links
+// const prefetch = usePrefetch{{Resource}}();
+// <tr onMouseEnter={() => prefetch(item.id)}>
+```
+
+---
+
+## Common Pitfalls
+
+| Pitfall | Fix |
+|---------|-----|
+| Not unwrapping the API envelope | Always access `response.{{API_ENVELOPE_DATA_KEY}}` |
+| Missing `enabled` flag on detail hooks | Add `enabled: !!id` to prevent fetching with undefined |
+| Forgetting to invalidate after mutations | Always invalidate related query keys in `onSuccess` |
+| Unstable query key references | Use primitive values in keys, not objects that change identity |
+| Missing error handling in UI | Wrap with `ErrorBoundary` or check `isError` from the hook |
+| Fetching on every render | Ensure params are stable (useMemo/useState, not inline objects) |

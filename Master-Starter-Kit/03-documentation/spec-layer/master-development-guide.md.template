@@ -1,0 +1,72 @@
+# {{PROJECT_NAME}} — Master Development Guide
+
+> Single source of truth for all development standards and practices.
+> Every developer (human or AI) must read this before writing code.
+
+---
+
+## Quick-Reference Golden Rules
+
+1. **Never rebuild what exists** — check backend services before creating new endpoints
+2. **Types are law** — no `any`, no untyped API responses, strict mode always on
+3. **4-state rendering** — every screen handles Loading, Error, Empty, and Data states
+4. **Contracts first** — agree on the API contract before writing frontend or backend code
+5. **Test what matters** — business logic and integration points, not implementation details
+
+---
+
+## Standards Documents
+
+| Standard | Location | Summary |
+|---|---|---|
+| Development Overview | `standards/development-standards-overview.md` | Golden rules, PR template, code review checklist |
+| API Standards | `standards/api-standards.md` | Response envelope, auth, versioning, error codes |
+| Database Standards | `standards/database-standards.md` | Naming, mandatory fields, migrations, indexing |
+| Frontend Standards | `standards/frontend-standards.md` | File structure, components, state, data fetching |
+| UI Standards | `standards/ui-standards.md` | Design tokens, spacing, typography, accessibility |
+| Type Safety | `standards/type-safety-standards.md` | Strict mode, Zod, generated types, no `any` |
+| Testing Strategy | `standards/testing-strategy.md` | Unit/integration/E2E, coverage targets, CI |
+
+---
+
+## Spec Templates
+
+| Template | Purpose |
+|---|---|
+| `service-spec-template.md` | 15-section format for backend service specifications |
+| `screen-spec-template.md` | 15-section format for frontend screen specifications |
+| `contracts/contract-template.md` | API contract format linking screen to endpoint |
+
+---
+
+## Checklists
+
+| Checklist | When to Use |
+|---|---|
+| `checklists/pre-feature-checklist.md` | Before starting any feature |
+| `checklists/pre-pr-checklist.md` | Before opening a pull request |
+| `checklists/pre-release-checklist.md` | Before deploying to production |
+
+---
+
+## AI Developer Prompts
+
+| Prompt | Target |
+|---|---|
+| `ai-dev-prompts/api-prompt-template.md` | Backend task delegation |
+| `ai-dev-prompts/web-prompt-template.md` | Frontend task delegation |
+
+---
+
+## How to Use This Guide
+
+1. Read this file first on any new session
+2. Reference the specific standard doc when working in that area
+3. Use the spec templates when defining new services or screens
+4. Run through the relevant checklist before transitions (feature start, PR, release)
+5. Use the AI prompt templates when delegating work to AI agents
+
+---
+
+*Last updated: {{LAST_UPDATED}}*
+*Maintainer: {{MAINTAINER}}*

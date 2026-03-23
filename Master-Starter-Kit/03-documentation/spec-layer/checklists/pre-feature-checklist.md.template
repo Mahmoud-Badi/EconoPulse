@@ -1,0 +1,53 @@
+# {{PROJECT_NAME}} -- Pre-Feature Checklist
+
+> Run through this checklist BEFORE starting any new feature.
+> Every item must be checked or explicitly marked N/A with a reason.
+
+---
+
+## Feature: ________________
+## Task ID: ________________
+## Developer: ________________
+## Date: ________________
+
+---
+
+### Context Gathering
+
+- [ ] Read the task file and its context header
+- [ ] Read the service hub for this domain
+- [ ] Read the design spec / screen spec
+- [ ] Check contracts registry for required API endpoints
+- [ ] Verify backend endpoints exist (test with curl/Postman)
+- [ ] Check existing components catalog for reusable pieces
+
+### Baseline Verification
+
+- [ ] Run `{{TYPE_CHECK_CMD}}` to confirm clean baseline
+- [ ] Run `{{LINT_CMD}}` to confirm no pre-existing lint errors
+- [ ] Run `{{TEST_CMD}}` to confirm all tests pass before starting
+
+### Specification Clarity
+
+- [ ] Acceptance criteria are clear and testable
+- [ ] Edge cases are identified (empty states, error states, permissions)
+- [ ] Data model is understood (required fields, relationships, constraints)
+- [ ] API request/response shapes are documented or agreed upon
+
+### Dependencies
+
+- [ ] No blocking dependencies unresolved
+- [ ] Required backend endpoints exist OR are in the same sprint scope
+- [ ] Required design tokens / components are available
+- [ ] Auth roles and permissions are configured for this feature
+- [ ] Third-party integrations are accessible (if applicable)
+
+### Planning
+
+- [ ] Component inventory listed (new vs. existing)
+- [ ] File/folder structure planned (where new files will live)
+- [ ] Estimated complexity: [ ] Small (< 2h) / [ ] Medium (2-6h) / [ ] Large (6h+)
+
+---
+
+**Ready to start:** [ ] Yes / [ ] No -- Blocked by: ________________

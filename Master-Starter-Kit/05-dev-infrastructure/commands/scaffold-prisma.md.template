@@ -1,0 +1,158 @@
+# /scaffold-prisma — Add Database Model and Run Migration
+
+Add a new database model with proper fields, relations, and run the migration workflow.
+Entity: **$ARGUMENTS**
+
+Parse $ARGUMENTS to extract: entity name and optional field hints (e.g., "invoice name:string amount:decimal status:enum").
+
+## Configuration
+- **Project root:** `{{PROJECT_ROOT}}`
+- **Schema file:** `{{SCHEMA_FILE}}`
+- **ORM:** `{{ORM}}`
+- **Multi-tenant:** `{{MULTI_TENANT}}`
+- **Soft delete:** `{{SOFT_DELETE}}`
+- **Backend source:** `{{BACKEND_SRC}}`
+- **Contract registry:** `{{CONTRACT_REGISTRY_PATH}}`
+
+## Steps
+
+### Step 1 — Check Existing Schema
+Read `{{SCHEMA_FILE}}` to verify the model does not already exist.
+If it exists, show the current definition and ask: "Model already exists. Extend it or abort?"
+Also check for related models that should have relations to the new entity.
+
+### Step 2 — Check Contracts and Specs
+Search `{{CONTRACT_REGISTRY_PATH}}` and design specs for field requirements.
+Extract: expected fields, types, relations, enums, constraints.
+Merge with any field hints provided in $ARGUMENTS.
+
+### Step 3 — Draft Model Definition
+
+<!-- IF {{ORM}} == "prisma" -->
+Draft a Prisma model with these mandatory fields:
+
+```prisma
+model EntityName {
+  id        String   @id @default(cuid())
+<!-- IF {{MULTI_TENANT}} == "true" -->
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+<!-- ENDIF -->
+
+  // Business fields from spec/arguments
+  // [field definitions here]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+<!-- IF {{SOFT_DELETE}} == "true" -->
+  deletedAt DateTime?
+<!-- ENDIF -->
+
+  // Relations
+  // [relation definitions here]
+
+<!-- IF {{MULTI_TENANT}} == "true" -->
+  @@index([tenantId])
+<!-- ENDIF -->
+  @@map("entity_names")  // snake_case table name
+}
+```
+
+If the entity uses status values, generate an enum:
+```prisma
+enum EntityNameStatus {
+  DRAFT
+  ACTIVE
+  // [other statuses from spec]
+}
+```
+<!-- ENDIF -->
+
+<!-- IF {{ORM}} == "typeorm" -->
+Draft a TypeORM entity class in `{{BACKEND_SRC}}/[entity]/[entity].entity.ts`:
+- `@PrimaryGeneratedColumn('uuid')` for id
+- `@CreateDateColumn()` and `@UpdateDateColumn()` for timestamps
+<!-- IF {{SOFT_DELETE}} == "true" -->
+- `@DeleteDateColumn()` for soft delete
+<!-- ENDIF -->
+<!-- IF {{MULTI_TENANT}} == "true" -->
+- `@Column()` tenantId with `@Index()`
+<!-- ENDIF -->
+- Business fields with proper column types
+- Relations with `@ManyToOne`, `@OneToMany`, etc.
+<!-- ENDIF -->
+
+<!-- IF {{ORM}} == "django-orm" -->
+Draft a Django model in `[app]/models.py`:
+- `id = models.UUIDField(primary_key=True, default=uuid.uuid4)`
+- `created_at = models.DateTimeField(auto_now_add=True)`
+- `updated_at = models.DateTimeField(auto_now=True)`
+<!-- IF {{SOFT_DELETE}} == "true" -->
+- `deleted_at = models.DateTimeField(null=True, blank=True)`
+<!-- ENDIF -->
+<!-- IF {{MULTI_TENANT}} == "true" -->
+- `tenant = models.ForeignKey('Tenant', on_delete=models.CASCADE)`
+<!-- ENDIF -->
+- Business fields with proper field types
+- `class Meta` with `db_table`, `ordering`, indexes
+<!-- ENDIF -->
+
+<!-- IF {{ORM}} == "activerecord" -->
+Draft a Rails migration in `db/migrate/`:
+- `create_table :entity_names, id: :uuid`
+- `t.timestamps null: false`
+<!-- IF {{SOFT_DELETE}} == "true" -->
+- `t.datetime :deleted_at`
+<!-- ENDIF -->
+<!-- IF {{MULTI_TENANT}} == "true" -->
+- `t.references :tenant, type: :uuid, foreign_key: true, index: true`
+<!-- ENDIF -->
+- Business columns with proper types
+- Indexes on frequently queried columns
+<!-- ENDIF -->
+
+### Step 4 — Show Draft and Confirm
+Display the drafted model definition to the user.
+Highlight: mandatory fields added, relations detected, indexes configured.
+Ask: "Apply this model? (yes / modify / abort)"
+
+### Step 5 — Apply Changes
+Write the model definition to `{{SCHEMA_FILE}}`.
+Also update any related models that need new relation fields.
+
+### Step 6 — Run Migration Workflow
+<!-- IF {{ORM}} == "prisma" -->
+Execute in order:
+1. `npx prisma format` — format the schema file
+2. `npx prisma validate` — validate schema correctness
+3. `npx prisma migrate dev --name add_[entity_name]` — create and apply migration
+4. `npx prisma generate` — regenerate Prisma Client types
+<!-- ENDIF -->
+<!-- IF {{ORM}} == "typeorm" -->
+1. `npx typeorm migration:generate -n Add[EntityName]`
+2. `npx typeorm migration:run`
+<!-- ENDIF -->
+<!-- IF {{ORM}} == "django-orm" -->
+1. `python manage.py makemigrations`
+2. `python manage.py migrate`
+<!-- ENDIF -->
+<!-- IF {{ORM}} == "activerecord" -->
+1. `rails db:migrate`
+<!-- ENDIF -->
+
+### Step 7 — Verify
+- Run `{{TYPE_CHECK_CMD}}` to ensure generated types are correct
+- Confirm migration was applied successfully
+- List the generated files (schema changes, migration file, generated types)
+
+## Output
+Report: model name, field count, relation count, migration file path, any warnings.
+Suggest next step: "Run `/scaffold-api $ARGUMENTS` to generate the API module."
+
+## Notes
+- Always use cuid() or uuid for primary keys, never auto-increment integers
+- Table names should be snake_case plural (e.g., `shipment_items`)
+- Index columns that will be frequently queried (foreign keys, status, dates)
+- If the entity references another entity that does not exist, warn before proceeding
+- Never drop or alter existing columns without explicit confirmation

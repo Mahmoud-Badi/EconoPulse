@@ -1,0 +1,56 @@
+# {{PROJECT_NAME}} -- Execution Layer (dev_docs)
+
+> This folder is the **single source of truth** for task management,
+> service ownership, and development standards.
+
+---
+
+## Folder Structure
+
+| Folder | Contents | When to Use |
+|--------|----------|-------------|
+| `./` (root) | STATUS.md, CHANGELOG.md, this README | Check task status, log work |
+| `foundations/` | Session playbook, design system, quality gates | Start of every session |
+| `tasks/` | Individual task files (one per task) | When working on a specific task |
+| `components/` | Component catalog and index | When building or reviewing UI |
+| `services/` | Service hub files (one per service) | When working on a service area |
+| `audit/` | Audit reports by domain | When assessing code quality |
+| `references/` | Doc map, quickstart, risk register, patterns | Quick lookups and onboarding |
+
+---
+
+## How to Find Tasks
+
+1. Open **STATUS.md** -- scan for tasks with Status = "Ready"
+2. Open the task file in `tasks/` matching the task ID
+3. Read the **Context Header** -- it lists the 6 files to load
+4. Follow the **File Plan** table to know exactly what to create/edit
+
+---
+
+## How to Read Service Hubs
+
+Each file in `services/` is the **hub** for one service area.
+It contains:
+- Backend/frontend implementation status
+- Screen inventory with routes
+- API endpoint catalog
+- Component list
+- Business rules and known issues
+- Links to detailed specs in `{{SPEC_LAYER_PATH}}`
+
+---
+
+## Quick Reference Links
+
+| Resource | Path |
+|----------|------|
+| Task Dashboard | `STATUS.md` |
+| Work Log | `CHANGELOG.md` |
+| Session Playbook | `foundations/session-kickoff.md` |
+| Design Tokens | `foundations/design-system.md` |
+| Quality Gates | `foundations/quality-gates.md` |
+| Component Index | `components/_index.md` |
+| Service Index | `services/_index.md` |
+| Doc Map | `references/doc-map.md` |
+| Dev Quickstart | `references/dev-quickstart.md` |

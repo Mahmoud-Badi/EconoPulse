@@ -1,0 +1,150 @@
+# /weekly-report — Generate HTML Progress Report
+
+Aggregate work log entries and git data into a styled HTML progress report.
+
+## Configuration
+- **Project root:** `{{PROJECT_ROOT}}`
+- **Work log path:** `{{WORK_LOG_PATH}}`
+- **Reports output dir:** `{{REPORTS_OUTPUT_DIR}}`
+- **Project name:** `{{PROJECT_NAME}}`
+- **Git remote:** `{{GIT_REMOTE}}`
+- **Task tracker:** `{{TASK_TRACKER_PATH}}`
+
+## Steps
+
+### Step 1 — Read Work Log Entries
+Read `{{WORK_LOG_PATH}}`.
+Identify entries from the current week (Monday to now) or since the last weekly report.
+Parse each entry for: date, summary, deliverables, files changed, metrics, commits.
+If no work log entries exist for the period, use git data alone.
+
+### Step 2 — Get Git Commit Data
+Run from `{{PROJECT_ROOT}}`:
+```bash
+git log --oneline --since="1 week ago" --format="%h|%s|%an|%ad" --date=short
+```
+Also run:
+```bash
+git diff --stat HEAD@{1.week.ago}..HEAD
+```
+Parse: commit count, unique authors, files changed, lines added/removed.
+
+### Step 3 — Aggregate Metrics
+Calculate totals for the reporting period:
+- Total commits
+- Total files changed (unique)
+- Total lines added / removed
+- Sessions logged
+- Deliverables completed (from work log)
+- Tasks completed (from `{{TASK_TRACKER_PATH}}` if available)
+
+### Step 4 — Determine Milestones
+From work log entries and task tracker, identify:
+- Major features completed this week
+- Features in progress (started but not finished)
+- Blockers encountered and their resolution status
+- Upcoming milestones for next week
+
+### Step 5 — Generate HTML Report
+Create an HTML file at `{{REPORTS_OUTPUT_DIR}}/week-[YYYY-WW].html` with:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{PROJECT_NAME}} — Weekly Report [date range]</title>
+  <style>
+    /* Clean, professional styling */
+    /* Use system fonts, subtle colors, good spacing */
+    /* Include print-friendly styles */
+  </style>
+</head>
+<body>
+  <!-- Banner: project name, date range, report number -->
+  <header>...</header>
+
+  <!-- Navigation tabs if report is long -->
+  <nav>
+    <a href="#summary">Summary</a>
+    <a href="#metrics">Metrics</a>
+    <a href="#accomplishments">Accomplishments</a>
+    <a href="#commits">Commits</a>
+    <a href="#next-week">Next Week</a>
+  </nav>
+
+  <!-- Executive Summary: 3-5 bullet points of key highlights -->
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <ul>
+      <li>[Key highlight 1]</li>
+      <li>[Key highlight 2]</li>
+    </ul>
+  </section>
+
+  <!-- Metrics Dashboard: visual cards with numbers -->
+  <section id="metrics">
+    <h2>Metrics</h2>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-value">N</span>
+        <span class="metric-label">Commits</span>
+      </div>
+      <!-- More cards: files changed, lines added, tests passing, tasks done -->
+    </div>
+  </section>
+
+  <!-- Accomplishments: grouped by area -->
+  <section id="accomplishments">
+    <h2>Accomplishments</h2>
+    <!-- Group by: Backend, Frontend, Infrastructure, Docs -->
+  </section>
+
+  <!-- Commit Log: collapsible table -->
+  <section id="commits">
+    <h2>Commit Log</h2>
+    <table>
+      <tr><th>Hash</th><th>Message</th><th>Author</th><th>Date</th></tr>
+      <!-- One row per commit -->
+    </table>
+  </section>
+
+  <!-- Milestones: progress bar or checklist -->
+  <section id="milestones">
+    <h2>Milestones</h2>
+    <!-- Visual progress indicators -->
+  </section>
+
+  <!-- Next Week: planned work -->
+  <section id="next-week">
+    <h2>Next Week</h2>
+    <ul>
+      <li>[Planned item 1]</li>
+      <li>[Planned item 2]</li>
+    </ul>
+  </section>
+
+  <footer>
+    Generated on [timestamp] by /weekly-report
+  </footer>
+</body>
+</html>
+```
+
+### Step 6 — Update Work Log Header
+Update the header of `{{WORK_LOG_PATH}}` with:
+- Last report date
+- Last report file path
+- Running totals (total commits, total sessions)
+
+### Step 7 — Report
+Confirm: "Weekly report generated: [file path]"
+Print a brief text summary of the key metrics.
+
+## Notes
+- Reports are cumulative for the week, not just one session
+- If git history is shallow or unavailable, rely on work log entries only
+- Keep the HTML self-contained (inline CSS, no external dependencies)
+- Include a print stylesheet so the report looks good when printed to PDF
+- Date range: Monday through the current day
+- File naming: `week-2026-07.html` for week 7 of 2026

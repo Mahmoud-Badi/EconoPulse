@@ -1,0 +1,41 @@
+# Security Policy — {{PROJECT_NAME}}
+
+## Supported Versions
+
+| Version | Supported |
+|---------|-----------|
+| Latest  | Yes       |
+| < Latest | No       |
+
+## Reporting a Vulnerability
+
+**Do NOT open a public issue for security vulnerabilities.**
+
+Instead, please report security issues by emailing **{{SECURITY_EMAIL}}**.
+
+Include:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+## Response Timeline
+
+- **Acknowledgment:** Within 48 hours
+- **Assessment:** Within 1 week
+- **Fix (critical):** Within 72 hours of confirmation
+- **Fix (high):** Within 2 weeks
+- **Fix (medium/low):** Next release cycle
+
+## Disclosure
+
+We follow responsible disclosure. We will:
+1. Confirm receipt of your report
+2. Assess the vulnerability
+3. Develop and test a fix
+4. Release the fix
+5. Credit you (unless you prefer anonymity)
+
+We ask that you:
+- Give us reasonable time to fix the issue before public disclosure
+- Make a good faith effort to avoid privacy violations, data destruction, and service disruption

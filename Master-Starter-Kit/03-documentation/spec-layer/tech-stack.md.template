@@ -1,0 +1,59 @@
+# {{PROJECT_NAME}} — Tech Stack Decisions
+
+> Every technology choice documented with rationale.
+> Update this when adding or replacing any dependency.
+
+---
+
+## Core Stack
+
+| Layer | Technology | Version | Purpose | Alternatives Considered |
+|---|---|---|---|---|
+| Frontend | {{FRONTEND_FRAMEWORK}} | {{FRONTEND_VERSION}} | {{FRONTEND_PURPOSE}} | {{FRONTEND_ALTERNATIVES}} |
+| Backend | {{BACKEND_FRAMEWORK}} | {{BACKEND_VERSION}} | {{BACKEND_PURPOSE}} | {{BACKEND_ALTERNATIVES}} |
+| Database | {{DATABASE}} | {{DATABASE_VERSION}} | {{DATABASE_PURPOSE}} | {{DATABASE_ALTERNATIVES}} |
+| ORM | {{ORM}} | {{ORM_VERSION}} | {{ORM_PURPOSE}} | {{ORM_ALTERNATIVES}} |
+| Auth | {{AUTH_LIBRARY}} | {{AUTH_VERSION}} | {{AUTH_PURPOSE}} | {{AUTH_ALTERNATIVES}} |
+
+---
+
+## Frontend Dependencies
+
+| Package | Version | Purpose | Rationale |
+|---|---|---|---|
+| {{FE_DEP_1_NAME}} | {{FE_DEP_1_VERSION}} | {{FE_DEP_1_PURPOSE}} | {{FE_DEP_1_RATIONALE}} |
+| {{FE_DEP_2_NAME}} | {{FE_DEP_2_VERSION}} | {{FE_DEP_2_PURPOSE}} | {{FE_DEP_2_RATIONALE}} |
+| {{FE_DEP_3_NAME}} | {{FE_DEP_3_VERSION}} | {{FE_DEP_3_PURPOSE}} | {{FE_DEP_3_RATIONALE}} |
+
+---
+
+## Backend Dependencies
+
+| Package | Version | Purpose | Rationale |
+|---|---|---|---|
+| {{BE_DEP_1_NAME}} | {{BE_DEP_1_VERSION}} | {{BE_DEP_1_PURPOSE}} | {{BE_DEP_1_RATIONALE}} |
+| {{BE_DEP_2_NAME}} | {{BE_DEP_2_VERSION}} | {{BE_DEP_2_PURPOSE}} | {{BE_DEP_2_RATIONALE}} |
+| {{BE_DEP_3_NAME}} | {{BE_DEP_3_VERSION}} | {{BE_DEP_3_PURPOSE}} | {{BE_DEP_3_RATIONALE}} |
+
+---
+
+## DevOps & Tooling
+
+| Tool | Version | Purpose |
+|---|---|---|
+| {{DEVTOOL_1}} | {{DEVTOOL_1_VERSION}} | {{DEVTOOL_1_PURPOSE}} |
+| {{DEVTOOL_2}} | {{DEVTOOL_2_VERSION}} | {{DEVTOOL_2_PURPOSE}} |
+| {{DEVTOOL_3}} | {{DEVTOOL_3_VERSION}} | {{DEVTOOL_3_PURPOSE}} |
+
+---
+
+## Decision Log
+
+| Date | Decision | Rationale |
+|---|---|---|
+| {{DECISION_DATE_1}} | {{DECISION_1}} | {{DECISION_RATIONALE_1}} |
+| {{DECISION_DATE_2}} | {{DECISION_2}} | {{DECISION_RATIONALE_2}} |
+
+---
+
+*Last updated: {{LAST_UPDATED}}*

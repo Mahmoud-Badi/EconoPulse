@@ -1,0 +1,104 @@
+# {{PROJECT_NAME}} — Frontend Standards
+
+---
+
+## File Structure
+
+```
+{{FRONTEND_APP_PATH}}/
+├── app/                    # Routes / Pages
+│   ├── (auth)/             # Auth-required layout group
+│   └── (public)/           # Public layout group
+├── components/
+│   ├── ui/                 # Base UI components (from library)
+│   ├── {{PROJECT_SLUG}}/  # Project-specific components
+│   └── shared/             # Shared across features
+├── hooks/                  # Custom React hooks
+├── lib/                    # Utilities, API client, helpers
+├── types/                  # TypeScript type definitions
+└── styles/                 # Global styles, tokens
+```
+
+---
+
+## Component Patterns
+
+### Naming
+- PascalCase for components: `LoadTable.tsx`, `CarrierForm.tsx`
+- camelCase for hooks: `useLoads.ts`, `useCarrierForm.ts`
+- kebab-case for routes/directories: `load-planner/`, `carrier-management/`
+
+### Structure
+- One component per file (colocate small helpers if tightly coupled)
+- Export component as named export, not default
+- Props interface defined in the same file, named `{Component}Props`
+
+---
+
+## State Management
+
+- **Server state:** {{DATA_FETCHING_LIBRARY}} <!-- React Query / SWR / RTK Query -->
+- **Client state:** {{CLIENT_STATE}} <!-- Context / Zustand / Redux -->
+- **Form state:** {{FORM_LIBRARY}} <!-- React Hook Form / Formik -->
+- **URL state:** Search params for filters, pagination, sorting
+
+> Rule: Server state in the data-fetching layer. Client-only state in context/store. Never duplicate.
+
+---
+
+## Data Fetching
+
+- All API calls go through a centralized API client (`lib/api.ts`)
+- Always unwrap the response envelope: `response.data.data`
+- Handle pagination from `response.data.pagination`
+- Cache invalidation on mutations
+
+<!-- IF {{FRONTEND_FRAMEWORK}} == "next" -->
+### Next.js Specific
+- Use Server Components for initial data fetch where possible
+- Client Components for interactive elements
+- `useRouter` for navigation, `useSearchParams` for query state
+<!-- ENDIF -->
+
+---
+
+## Error Handling
+
+- API errors caught in the API client layer, transformed to consistent shape
+- Display user-friendly messages, log technical details
+- Use error boundaries for unexpected crashes
+- Toast notifications for action feedback (success/error)
+
+---
+
+## 4-State Rendering
+
+Every data-driven component MUST handle all 4 states:
+
+1. **Loading:** Skeleton UI matching the layout
+2. **Error:** Error message + retry button
+3. **Empty:** Illustration + message + CTA (if applicable)
+4. **Data:** The actual populated UI
+
+---
+
+## Form Patterns
+
+- Validation with Zod schemas (shared with backend when possible)
+- Inline field errors shown on blur and submit
+- Disable submit button while submitting
+- Optimistic updates where appropriate
+- Dirty-form warning on navigation
+
+---
+
+## Navigation
+
+- Breadcrumbs on all nested pages
+- Active sidebar item highlighted
+- Back buttons on detail/edit pages
+- Preserve filters/pagination in URL search params
+
+---
+
+*Last updated: {{LAST_UPDATED}}*

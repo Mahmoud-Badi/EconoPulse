@@ -1,0 +1,80 @@
+# {{PROJECT_NAME}} -- Pre-Release Checklist
+
+> Run through this checklist BEFORE deploying to production.
+> Every item must pass. No exceptions.
+
+---
+
+## Release: v________________
+## Target Environment: ________________
+## Release Manager: ________________
+## Date: ________________
+
+---
+
+### Sprint Completion
+
+- [ ] All sprint tasks complete and merged
+- [ ] No open PRs targeting this release
+- [ ] CHANGELOG updated with release notes
+
+### Quality Gates
+
+- [ ] Quality gate passes on all services
+- [ ] `{{LINT_CMD}}` clean across all packages
+- [ ] `{{TYPE_CHECK_CMD}}` clean across all packages
+- [ ] `{{BUILD_CMD}}` succeeds for production target
+
+### Tests
+
+- [ ] All unit tests pass (`{{TEST_CMD}}`)
+- [ ] All integration tests pass
+- [ ] E2E tests pass critical paths on staging
+- [ ] No skipped tests without documented justification
+
+### Database
+
+- [ ] Database migrations tested on staging
+- [ ] Migration rollback tested and verified
+- [ ] Seed data excluded from production migration
+- [ ] Backup taken before migration
+
+### Environment
+
+- [ ] Environment variables documented and configured for production
+- [ ] No secrets or credentials in codebase
+- [ ] `.env.example` updated with any new variables
+- [ ] Health check endpoints responding on staging
+
+### Bugs
+
+- [ ] No P0 (critical) bugs in bug inventory
+- [ ] No P1 (high) bugs in bug inventory
+- [ ] Known issues documented in release notes
+
+### Performance
+
+- [ ] Performance acceptable -- page load < 3s on target devices
+- [ ] API response times within SLA (< {{API_RESPONSE_TARGET}}ms)
+- [ ] No memory leaks detected in extended testing
+- [ ] Database queries optimized (no N+1, proper indexing)
+
+### Security
+
+- [ ] Security scan clean -- no critical vulnerabilities
+- [ ] Auth and authorization tested for all roles
+- [ ] Input validation in place on all endpoints
+- [ ] CORS configuration correct for production
+- [ ] Rate limiting configured on public endpoints
+
+### Deployment
+
+- [ ] Monitoring and alerts configured
+- [ ] Rollback plan documented and tested
+- [ ] On-call schedule confirmed for post-deploy window
+
+---
+
+**Ready to deploy:** [ ] Yes / [ ] No -- Blocker: ________________
+
+**Sign-off:** ________________ (date: ________)

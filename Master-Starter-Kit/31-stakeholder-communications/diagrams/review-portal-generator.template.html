@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{PROJECT_NAME}} — Diagram Review Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<script>const DIAGRAM_DATA = {{DIAGRAM_DATA_JSON}};</script>
+<style>
+    :root {
+      --bg: #f8f9fb;
+      --surface: #ffffff;
+      --surface-hover: #f3f4f6;
+      --surface-active: #eef0f4;
+      --border: #e5e7eb;
+      --border-light: #f0f1f3;
+      --text: #111827;
+      --text-sec: #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --accent: {{BRAND_COLOR}};
+      --accent-light: #eef2ff;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+      --status-grey: #9ca3af;
+      --status-green: #10b981;
+      --status-amber: #f59e0b;
+      --status-blue: #3b82f6;
+      --status-red: #ef4444;
+      --sidebar-w: 260px;
+      --header-h: 56px;
+      --feedback-w: 340px;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column; overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+    /* ── HEADER ── */
+    .header {
+      flex-shrink: 0; background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 1.25rem; height: var(--header-h); display: flex; align-items: center;
+      justify-content: space-between; z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 0.75rem; }
+    .logo {
+      width: 32px; height: 32px; background: var(--accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; color: white; letter-spacing: -0.02em;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 0.875rem; font-weight: 700; letter-spacing: -0.025em; white-space: nowrap; }
+    .header h1 .brand { color: var(--text); }
+    .header h1 .subtitle { color: var(--text-muted); font-weight: 500; }
+    .header-right { display: flex; align-items: center; gap: 0.5rem; }
+    .pill {
+      padding: 0.3rem 0.7rem; background: var(--bg); border: 1px solid var(--border-light);
+      border-radius: 100px; font-size: 0.68rem; color: var(--text-muted); font-weight: 500;
+      white-space: nowrap; display: flex; align-items: center; gap: 0.35rem;
+    }
+    .pill b { color: var(--text); font-weight: 700; }
+    .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--status-green); }
+    .btn-export {
+      padding: 0.4rem 0.85rem; border-radius: 8px; font-size: 0.72rem; font-weight: 600;
+      background: var(--text); color: white; border: none; cursor: pointer;
+      transition: all 0.15s; display: flex; align-items: center; gap: 0.4rem;
+      letter-spacing: -0.01em;
+    }
+    .btn-export:hover { background: #374151; transform: translateY(-0.5px); }
+    .btn-export svg { width: 14px; height: 14px; }
+
+    /* ── BODY LAYOUT ── */
+    .body-layout {
+      flex: 1; display: flex; overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--bg);
+      border-right: 1px solid var(--border); overflow-y: auto; overflow-x: hidden;
+      display: flex; flex-direction: column; z-index: 50;
+      transition: width 0.25s ease, min-width 0.25s ease;
+      position: relative;
+    }
+    .sidebar.collapsed {
+      width: 0; min-width: 0; border-right: none; overflow: hidden;
+    }
+    .sidebar-inner { padding: 0.5rem 0; }
+    .sidebar-toggle {
+      position: absolute; top: 12px; right: -14px; z-index: 60;
+      width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-faint); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: all 0.15s;
+    }
+    .sidebar-toggle:hover { background: var(--surface-hover); color: var(--text); }
+    .sidebar-toggle svg { width: 14px; height: 14px; transition: transform 0.25s; }
+    .sidebar.collapsed .sidebar-toggle { right: -36px; }
+    .sidebar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+    .category { margin-bottom: 0.15rem; }
+    .category-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.55rem 1rem 0.45rem 1rem; cursor: pointer; user-select: none;
+      transition: background 0.12s;
+    }
+    .category-header:hover { background: var(--surface-hover); }
+    .category-label {
+      font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-faint);
+    }
+    .category-count {
+      font-size: 0.58rem; font-weight: 600; color: var(--text-faint);
+      background: var(--surface); border: 1px solid var(--border-light);
+      padding: 0.1rem 0.4rem; border-radius: 4px; min-width: 18px; text-align: center;
+    }
+    .category-chevron {
+      width: 14px; height: 14px; color: var(--text-faint); transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .category.collapsed .category-chevron { transform: rotate(-90deg); }
+    .category.collapsed .category-items { display: none; }
+    .category-items { padding: 0.1rem 0 0.3rem 0; }
+    .diagram-item {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 1rem 0.4rem 1.15rem; cursor: pointer;
+      transition: all 0.12s; border-left: 3px solid transparent;
+      font-size: 0.75rem; color: var(--text-sec); font-weight: 450;
+      line-height: 1.3;
+    }
+    .diagram-item:hover { background: var(--surface-hover); }
+    .diagram-item.active {
+      border-left-color: var(--accent); background: var(--accent-light);
+      color: var(--text); font-weight: 600;
+    }
+    .status-dot {
+      width: 16px; height: 16px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; line-height: 1;
+    }
+    .status-dot.not-reviewed { color: var(--text-faint); }
+    .status-dot.approved { color: var(--status-green); }
+    .status-dot.needs-changes { color: var(--status-amber); }
+    .status-dot.question { color: var(--status-blue); }
+
+    /* ── MAIN AREA ── */
+    .main-area {
+      flex: 1; display: flex; overflow: hidden; position: relative;
+    }
+
+    /* ── VIEWPORT ── */
+    .viewport-wrapper {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+      margin: 0.65rem; margin-left: 0;
+    }
+    .viewport {
+      flex: 1; position: relative; overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: var(--shadow-sm);
+    }
+    .viewport-label {
+      position: absolute; top: 1rem; left: 1.25rem; z-index: 50; pointer-events: none;
+      max-width: calc(100% - 120px);
+    }
+    .viewport-label h2 {
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.025em;
+      color: var(--text); line-height: 1.25;
+    }
+    .viewport-label p {
+      font-size: 0.7rem; color: var(--text-faint); margin-top: 0.2rem;
+      line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .viewport-label .type-badge {
+      display: inline-block; margin-top: 0.35rem; padding: 0.18rem 0.5rem;
+      border-radius: 5px; font-size: 0.58rem; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .type-badge.mindmap { background: #ddd6fe; color: #5b21b6; }
+    .type-badge.flowchart { background: #dbeafe; color: #1e40af; }
+    .type-badge.sequence { background: #d1fae5; color: #065f46; }
+    .type-badge.state { background: #fce7f3; color: #9d174d; }
+    .type-badge.er { background: #fef3c7; color: #92400e; }
+    .type-badge.gantt { background: #e0e7ff; color: #3730a3; }
+    .type-badge.timeline { background: #ccfbf1; color: #115e59; }
+    .type-badge.git { background: #f3e8ff; color: #6b21a8; }
+    .type-badge.other { background: var(--surface-active); color: var(--text-muted); }
+
+    /* ── VIEWPORT TOOLBAR ── */
+    .viewport-toolbar {
+      position: absolute; bottom: 1rem; right: 1rem;
+      display: flex; flex-direction: column; gap: 0.15rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.3rem; box-shadow: var(--shadow-md); z-index: 50;
+    }
+    .viewport-toolbar button {
+      width: 34px; height: 34px; border-radius: 7px; border: none;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+      font-size: 1rem;
+    }
+    .viewport-toolbar button:hover { background: var(--surface-hover); color: var(--text); }
+    .viewport-toolbar .sep { height: 1px; background: var(--border-light); margin: 0.15rem 0.25rem; }
+
+    .review-btn {
+      position: absolute; top: 1rem; right: 1rem; z-index: 50;
+      padding: 0.4rem 0.85rem; border-radius: 8px; font-size: 0.72rem; font-weight: 600;
+      background: var(--accent); color: white; border: none; cursor: pointer;
+      transition: all 0.15s; display: flex; align-items: center; gap: 0.35rem;
+      box-shadow: 0 2px 8px rgba(129,140,248,0.3);
+    }
+    .review-btn:hover { background: #6366f1; transform: translateY(-0.5px); }
+    .review-btn svg { width: 14px; height: 14px; }
+
+    .hint {
+      position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+      z-index: 50; font-size: 0.62rem; color: var(--text-faint); pointer-events: none;
+      opacity: 0.5; white-space: nowrap;
+    }
+
+    /* ── DIAGRAM CONTAINER ── */
+    .diagram-container {
+      width: 100%; height: 100%; overflow: hidden; position: relative;
+    }
+    .diagram-container svg { cursor: grab; }
+    .diagram-container svg:active { cursor: grabbing; }
+
+    /* ── LOADING ── */
+    .loading-overlay {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.75rem;
+      background: var(--surface); z-index: 40;
+    }
+    .spinner {
+      width: 28px; height: 28px; border: 2.5px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 0.72rem; color: var(--text-faint); font-weight: 500; }
+
+    /* ── ERROR ── */
+    .error-display {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.5rem;
+      background: var(--surface); z-index: 40;
+    }
+    .error-icon { font-size: 2rem; opacity: 0.3; }
+    .error-title { font-size: 0.85rem; font-weight: 600; color: var(--text-sec); }
+    .error-message { font-size: 0.72rem; color: var(--text-faint); max-width: 400px; text-align: center; }
+
+    /* ── WELCOME ── */
+    .welcome-display {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.75rem;
+      background: var(--surface); z-index: 40;
+    }
+    .welcome-icon {
+      width: 56px; height: 56px; background: var(--accent-light); border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: var(--accent);
+    }
+    .welcome-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .welcome-sub { font-size: 0.75rem; color: var(--text-faint); text-align: center; line-height: 1.5; max-width: 320px; }
+    .welcome-kbd { display: inline-block; padding: 0.15rem 0.4rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; font-size: 0.62rem; font-weight: 600; font-family: 'Inter', monospace; color: var(--text-muted); }
+
+    /* ── FEEDBACK PANEL ── */
+    .feedback-panel {
+      width: 0; min-width: 0; overflow: hidden;
+      background: var(--surface); border-left: 1px solid var(--border);
+      box-shadow: -4px 0 16px rgba(0,0,0,0.06);
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column; z-index: 60;
+    }
+    .feedback-panel.open {
+      width: var(--feedback-w); min-width: var(--feedback-w);
+    }
+    .feedback-header {
+      padding: 1rem 1.15rem 0.75rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .feedback-header h3 { font-size: 0.82rem; font-weight: 700; }
+    .feedback-close {
+      width: 28px; height: 28px; border-radius: 6px; border: none;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+    }
+    .feedback-close:hover { background: var(--surface-hover); color: var(--text); }
+    .feedback-body {
+      flex: 1; overflow-y: auto; padding: 1rem 1.15rem;
+      display: flex; flex-direction: column; gap: 1.25rem;
+    }
+    .fb-section-label {
+      font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 0.5rem;
+    }
+
+    /* Status buttons */
+    .status-group { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+    .status-btn {
+      padding: 0.45rem 0.5rem; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--surface); cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.68rem; font-weight: 550; color: var(--text-sec);
+      font-family: 'Inter', sans-serif;
+    }
+    .status-btn:hover { border-color: #c7d2fe; background: #fafbff; }
+    .status-btn .status-icon { font-size: 12px; line-height: 1; }
+    .status-btn[data-status="not-reviewed"] .status-icon { color: var(--status-grey); }
+    .status-btn[data-status="approved"] .status-icon { color: var(--status-green); }
+    .status-btn[data-status="needs-changes"] .status-icon { color: var(--status-amber); }
+    .status-btn[data-status="question"] .status-icon { color: var(--status-blue); }
+    .status-btn.selected { border-color: var(--accent); background: var(--accent-light); color: var(--text); }
+    .status-btn[data-status="approved"].selected { border-color: var(--status-green); background: #ecfdf5; }
+    .status-btn[data-status="needs-changes"].selected { border-color: var(--status-amber); background: #fffbeb; }
+    .status-btn[data-status="question"].selected { border-color: var(--status-blue); background: #eff6ff; }
+
+    /* Priority pills */
+    .priority-group { display: flex; gap: 0.3rem; }
+    .priority-pill {
+      flex: 1; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1.5px solid var(--border);
+      background: var(--surface); cursor: pointer; transition: all 0.15s;
+      font-size: 0.66rem; font-weight: 550; color: var(--text-muted); text-align: center;
+      font-family: 'Inter', sans-serif;
+    }
+    .priority-pill:hover { border-color: #d1d5db; }
+    .priority-pill.selected { border-color: var(--accent); background: var(--accent-light); color: var(--text); font-weight: 600; }
+    .priority-pill[data-priority="blocker"].selected { border-color: var(--status-red); background: #fef2f2; color: #dc2626; }
+    .priority-pill[data-priority="important"].selected { border-color: var(--status-amber); background: #fffbeb; color: #d97706; }
+
+    /* Comments */
+    .comments-list { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-height: 0; overflow-y: auto; }
+    .comment-card {
+      padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--bg);
+      border-left: 3px solid var(--border); font-size: 0.72rem; line-height: 1.5;
+      color: var(--text-sec); position: relative;
+    }
+    .comment-card.status-approved { border-left-color: var(--status-green); }
+    .comment-card.status-needs-changes { border-left-color: var(--status-amber); }
+    .comment-card.status-question { border-left-color: var(--status-blue); }
+    .comment-text { white-space: pre-wrap; word-break: break-word; }
+    .comment-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 0.35rem; font-size: 0.6rem; color: var(--text-faint);
+    }
+    .comment-delete {
+      background: none; border: none; color: var(--text-faint); cursor: pointer;
+      font-size: 0.6rem; padding: 0.1rem 0.3rem; border-radius: 4px;
+      transition: all 0.12s; opacity: 0;
+    }
+    .comment-card:hover .comment-delete { opacity: 1; }
+    .comment-delete:hover { background: #fef2f2; color: var(--status-red); }
+    .empty-comments {
+      text-align: center; padding: 1.5rem 0; color: var(--text-faint);
+      font-size: 0.72rem;
+    }
+
+    /* Add comment */
+    .add-comment-area { flex-shrink: 0; }
+    .comment-textarea {
+      width: 100%; min-height: 64px; max-height: 140px; padding: 0.6rem 0.75rem;
+      border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.72rem;
+      font-family: 'Inter', sans-serif; color: var(--text); background: var(--surface);
+      resize: vertical; transition: border-color 0.15s; line-height: 1.5;
+    }
+    .comment-textarea::placeholder { color: var(--text-faint); }
+    .comment-textarea:focus { outline: none; border-color: var(--accent); }
+    .add-comment-row { display: flex; gap: 0.35rem; margin-top: 0.4rem; }
+    .btn-add-comment {
+      flex: 1; padding: 0.45rem 0.75rem; border-radius: 7px; border: none;
+      background: var(--accent); color: white; font-size: 0.7rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+    }
+    .btn-add-comment:hover { background: #6366f1; }
+    .btn-add-comment:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Feedback footer */
+    .feedback-footer {
+      padding: 0.75rem 1.15rem; border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    .btn-next {
+      width: 100%; padding: 0.5rem; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text-sec); font-size: 0.72rem;
+      font-weight: 600; cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-next:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── MARKMAP OVERRIDES ── */
+    .markmap-node-text { fill: #111827 !important; font-family: 'Inter', sans-serif !important; font-size: 13px !important; font-weight: 500 !important; }
+    .markmap-link { stroke-opacity: 0.2 !important; stroke-width: 1.5px !important; }
+
+    /* ── MERMAID OVERRIDES ── */
+    .mermaid-viewport { display: flex; justify-content: center; align-items: flex-start; min-width: max-content; }
+    .mermaid-viewport svg { max-width: none !important; }
+    .mermaid-viewport text { font-family: 'Inter', sans-serif !important; }
+    .mermaid-viewport .nodeLabel { font-size: 13px !important; font-weight: 500 !important; }
+    .mermaid-viewport .cluster-label .nodeLabel { font-size: 11px !important; font-weight: 600 !important; }
+    .mermaid-viewport .edgeLabel { font-size: 11px !important; background: white !important; }
+    .mermaid-viewport .node rect,
+    .mermaid-viewport .node circle,
+    .mermaid-viewport .node polygon { rx: 10 !important; ry: 10 !important; stroke-width: 1px !important; }
+    .mermaid-viewport .cluster rect { rx: 14 !important; ry: 14 !important; }
+    .mermaid-viewport .flowchart-link { stroke-width: 1.5px !important; stroke-opacity: 0.45 !important; }
+
+    /* ── TRANSITIONS ── */
+    .fade-in { animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      padding: 0.55rem 1rem; border-radius: 8px; background: var(--text);
+      color: white; font-size: 0.72rem; font-weight: 500; z-index: 1000;
+      box-shadow: var(--shadow-lg); opacity: 0; transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1000px) {
+      :root { --sidebar-w: 220px; --feedback-w: 300px; }
+    }
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 200px; --feedback-w: 280px; }
+      .header h1 .subtitle { display: none; }
+      .viewport-label h2 { font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">{{BRAND_ABBREVIATION}}</div>
+    <h1>
+      <span class="brand">{{PROJECT_NAME}}</span>
+      <span class="subtitle"> &mdash; Diagram Review Portal</span>
+    </h1>
+  </div>
+  <div class="header-right">
+    <div class="pill" id="progressPill">
+      <span class="dot"></span>
+      <b id="reviewedCount">0</b>/<b id="totalCount">0</b> reviewed
+    </div>
+    <button class="btn-export" id="exportBtn" title="Export Feedback (Ctrl+E)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+  </div>
+</header>
+
+<!-- ═══ BODY ═══ -->
+<div class="body-layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </aside>
+
+  <!-- ── MAIN AREA ── -->
+  <div class="main-area">
+
+    <!-- ── VIEWPORT ── -->
+    <div class="viewport-wrapper">
+      <div class="viewport" id="viewport">
+        <!-- Welcome -->
+        <div class="welcome-display" id="welcomeDisplay">
+          <div class="welcome-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div class="welcome-title">Diagram Review Portal</div>
+          <div class="welcome-sub">
+            Select a diagram from the sidebar to begin reviewing.<br>
+            Use <span class="welcome-kbd">Ctrl+E</span> to export feedback at any time.
+          </div>
+        </div>
+
+        <!-- Label -->
+        <div class="viewport-label" id="viewportLabel" style="display:none;">
+          <h2 id="diagramTitle"></h2>
+          <p id="diagramDesc"></p>
+          <span class="type-badge" id="typeBadge"></span>
+        </div>
+
+        <!-- Review button -->
+        <button class="review-btn" id="reviewBtn" style="display:none;" title="Toggle Review Panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          Review
+        </button>
+
+        <!-- Diagram container -->
+        <div class="diagram-container" id="diagramContainer"></div>
+
+        <!-- Loading -->
+        <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+          <div class="spinner"></div>
+          <div class="loading-text">Rendering diagram...</div>
+        </div>
+
+        <!-- Error -->
+        <div class="error-display" id="errorDisplay" style="display:none;">
+          <div class="error-icon">!</div>
+          <div class="error-title" id="errorTitle">Failed to load diagram</div>
+          <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="viewport-toolbar" id="viewportToolbar" style="display:none;">
+          <button id="zoomInBtn" title="Zoom In">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button id="zoomOutBtn" title="Zoom Out">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="sep"></div>
+          <button id="fitBtn" title="Fit to View">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          </button>
+        </div>
+
+        <!-- Hint -->
+        <div class="hint" id="hint" style="display:none;">Scroll to zoom &middot; Drag to pan</div>
+      </div>
+    </div>
+
+    <!-- ── FEEDBACK PANEL ── -->
+    <div class="feedback-panel" id="feedbackPanel">
+      <div class="feedback-header">
+        <h3>Review Feedback</h3>
+        <button class="feedback-close" id="feedbackClose" title="Close (Esc)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="feedback-body" id="feedbackBody">
+        <!-- Status -->
+        <div>
+          <div class="fb-section-label">Status</div>
+          <div class="status-group" id="statusGroup">
+            <button class="status-btn selected" data-status="not-reviewed">
+              <span class="status-icon">&#9675;</span> Not Reviewed
+            </button>
+            <button class="status-btn" data-status="approved">
+              <span class="status-icon">&#10003;</span> Approved
+            </button>
+            <button class="status-btn" data-status="needs-changes">
+              <span class="status-icon">&#9889;</span> Needs Changes
+            </button>
+            <button class="status-btn" data-status="question">
+              <span class="status-icon">?</span> Question
+            </button>
+          </div>
+        </div>
+
+        <!-- Priority -->
+        <div>
+          <div class="fb-section-label">Priority</div>
+          <div class="priority-group" id="priorityGroup">
+            <button class="priority-pill selected" data-priority="normal">Normal</button>
+            <button class="priority-pill" data-priority="important">Important</button>
+            <button class="priority-pill" data-priority="blocker">Blocker</button>
+          </div>
+        </div>
+
+        <!-- Comments -->
+        <div style="display:flex;flex-direction:column;flex:1;min-height:0;">
+          <div class="fb-section-label">Comments</div>
+          <div class="comments-list" id="commentsList">
+            <div class="empty-comments">No comments yet</div>
+          </div>
+        </div>
+
+        <!-- Add comment -->
+        <div class="add-comment-area">
+          <textarea class="comment-textarea" id="commentInput" placeholder="Add a comment..." rows="2"></textarea>
+          <div class="add-comment-row">
+            <button class="btn-add-comment" id="addCommentBtn" disabled>Add Comment</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="feedback-footer">
+        <button class="btn-next" id="nextUnreviewedBtn">
+          Next unreviewed
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════ JAVASCRIPT ═══════════════════════════ -->
+<script type="module">
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
+import { Transformer } from 'https://cdn.jsdelivr.net/npm/markmap-lib@0.18/+esm';
+import { Markmap } from 'https://cdn.jsdelivr.net/npm/markmap-view@0.18/+esm';
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+// ─── DIAGRAM INDEX ───
+const CATEGORIES = {{CATEGORIES_JSON}};
+
+// ─── COMPUTED ───
+const ALL_DIAGRAMS = CATEGORIES.flatMap(c => c.diagrams);
+const TOTAL = ALL_DIAGRAMS.length;
+const STORAGE_KEY = '{{PROJECT_SLUG}}-diagram-feedback';
+
+// ─── STATE ───
+let feedbackData = {};
+let activeDiagram = null;
+let feedbackPanelOpen = false;
+let currentZoomBehavior = null;
+let currentSvgSelection = null;
+let mermaidIdCounter = 0;
+
+// ─── DOM REFS ───
+const $sidebar = document.getElementById('sidebar');
+const $viewport = document.getElementById('viewport');
+const $diagramContainer = document.getElementById('diagramContainer');
+const $welcomeDisplay = document.getElementById('welcomeDisplay');
+const $loadingOverlay = document.getElementById('loadingOverlay');
+const $errorDisplay = document.getElementById('errorDisplay');
+const $errorTitle = document.getElementById('errorTitle');
+const $errorMessage = document.getElementById('errorMessage');
+const $viewportLabel = document.getElementById('viewportLabel');
+const $diagramTitle = document.getElementById('diagramTitle');
+const $diagramDesc = document.getElementById('diagramDesc');
+const $typeBadge = document.getElementById('typeBadge');
+const $reviewBtn = document.getElementById('reviewBtn');
+const $viewportToolbar = document.getElementById('viewportToolbar');
+const $hint = document.getElementById('hint');
+const $feedbackPanel = document.getElementById('feedbackPanel');
+const $feedbackBody = document.getElementById('feedbackBody');
+const $statusGroup = document.getElementById('statusGroup');
+const $priorityGroup = document.getElementById('priorityGroup');
+const $commentsList = document.getElementById('commentsList');
+const $commentInput = document.getElementById('commentInput');
+const $addCommentBtn = document.getElementById('addCommentBtn');
+const $nextUnreviewedBtn = document.getElementById('nextUnreviewedBtn');
+const $feedbackClose = document.getElementById('feedbackClose');
+const $reviewedCount = document.getElementById('reviewedCount');
+const $totalCount = document.getElementById('totalCount');
+const $exportBtn = document.getElementById('exportBtn');
+const $toast = document.getElementById('toast');
+
+// ─── INIT MERMAID ───
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: 'Inter, system-ui, sans-serif',
+  fontSize: 14,
+  suppressErrorRendering: true,
+  themeVariables: {
+    primaryColor: '#eef2ff', primaryBorderColor: '#c7d2fe', primaryTextColor: '#1e1b4b',
+    secondaryColor: '#f0fdf4', secondaryBorderColor: '#bbf7d0', secondaryTextColor: '#14532d',
+    tertiaryColor: '#fefce8', tertiaryBorderColor: '#fde68a', tertiaryTextColor: '#713f12',
+    lineColor: '#94a3b8', textColor: '#1e293b',
+    nodeBorder: '#c7d2fe', mainBkg: '#eef2ff', clusterBkg: '#f8fafc', clusterBorder: '#e2e8f0',
+    edgeLabelBackground: '#ffffff',
+    actorBkg: '#eef2ff', actorBorder: '#c7d2fe', actorTextColor: '#1e293b',
+    signalColor: '#475569', signalTextColor: '#475569',
+    noteBkgColor: '#fefce8', noteBorderColor: '#fde68a', noteTextColor: '#713f12',
+    activationBkgColor: '#e0e7ff', activationBorderColor: '#a5b4fc',
+  },
+  flowchart: { curve: 'basis', htmlLabels: true, padding: 20, nodeSpacing: 50, rankSpacing: 60 },
+  sequence: { actorMargin: 80, messageMargin: 35, mirrorActors: true, fontSize: 13, showSequenceNumbers: true },
+  stateDiagram: { fontSize: 13 },
+  er: { fontSize: 12 },
+  gantt: { fontSize: 12, barHeight: 28, barGap: 5 },
+});
+
+// ─── FEEDBACK PERSISTENCE ───
+function loadFeedback() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    feedbackData = raw ? JSON.parse(raw) : {};
+  } catch { feedbackData = {}; }
+}
+
+function saveFeedback() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(feedbackData));
+  updateProgress();
+  updateSidebarDots();
+}
+
+function getFeedback(file) {
+  return feedbackData[file] || { status: 'not-reviewed', priority: 'normal', comments: [] };
+}
+
+function setFeedback(file, data) {
+  feedbackData[file] = data;
+  saveFeedback();
+}
+
+// ─── PROGRESS ───
+function getReviewedCount() {
+  return ALL_DIAGRAMS.filter(d => {
+    const fb = feedbackData[d.file];
+    return fb && fb.status && fb.status !== 'not-reviewed';
+  }).length;
+}
+
+function updateProgress() {
+  $reviewedCount.textContent = getReviewedCount();
+  $totalCount.textContent = TOTAL;
+}
+
+// ─── SIDEBAR ───
+function buildSidebar() {
+  const toggleBtn = document.getElementById('sidebarToggle');
+  $sidebar.innerHTML = '';
+  if (toggleBtn) $sidebar.appendChild(toggleBtn);
+  const inner = document.createElement('div');
+  inner.className = 'sidebar-inner';
+
+  CATEGORIES.forEach(cat => {
+    const catEl = document.createElement('div');
+    catEl.className = 'category';
+    catEl.id = `cat-${cat.id}`;
+
+    const header = document.createElement('div');
+    header.className = 'category-header';
+    header.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="category-label">${cat.label}</span>
+        <span class="category-count">${cat.diagrams.length}</span>
+      </div>
+      <svg class="category-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    `;
+    header.addEventListener('click', () => {
+      catEl.classList.toggle('collapsed');
+    });
+
+    const items = document.createElement('div');
+    items.className = 'category-items';
+
+    cat.diagrams.forEach(diag => {
+      const item = document.createElement('div');
+      item.className = 'diagram-item';
+      item.dataset.file = diag.file;
+
+      const dot = document.createElement('span');
+      dot.className = 'status-dot';
+      dot.dataset.file = diag.file;
+      updateDotElement(dot, diag.file);
+
+      const label = document.createElement('span');
+      label.textContent = diag.label;
+
+      item.appendChild(dot);
+      item.appendChild(label);
+
+      item.addEventListener('click', () => selectDiagram(diag));
+      items.appendChild(item);
+    });
+
+    catEl.appendChild(header);
+    catEl.appendChild(items);
+    inner.appendChild(catEl);
+  });
+
+  $sidebar.appendChild(inner);
+}
+
+function updateDotElement(dot, file) {
+  const fb = getFeedback(file);
+  dot.className = 'status-dot';
+  switch (fb.status) {
+    case 'approved':
+      dot.classList.add('approved');
+      dot.innerHTML = '&#10003;';
+      break;
+    case 'needs-changes':
+      dot.classList.add('needs-changes');
+      dot.innerHTML = '&#9889;';
+      break;
+    case 'question':
+      dot.classList.add('question');
+      dot.innerHTML = '?';
+      break;
+    default:
+      dot.classList.add('not-reviewed');
+      dot.innerHTML = '&#9675;';
+  }
+}
+
+function updateSidebarDots() {
+  document.querySelectorAll('.status-dot[data-file]').forEach(dot => {
+    updateDotElement(dot, dot.dataset.file);
+  });
+}
+
+function setActiveItem(file) {
+  document.querySelectorAll('.diagram-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.file === file);
+  });
+  const activeEl = document.querySelector(`.diagram-item[data-file="${file}"]`);
+  if (activeEl) {
+    const cat = activeEl.closest('.category');
+    if (cat && cat.classList.contains('collapsed')) {
+      cat.classList.remove('collapsed');
+    }
+    activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+// ─── DIAGRAM PARSING ───
+function parseMdFile(content) {
+  const lines = content.split('\n');
+  let title = '';
+  let globalDesc = '';
+  const blocks = [];
+  let currentCode = '';
+  let currentDesc = '';
+  let inCodeBlock = false;
+  let blockDescLines = [];
+
+  for (const line of lines) {
+    if (!inCodeBlock && line.startsWith('# ') && !title) {
+      title = line.replace(/^#\s+/, '').trim();
+      continue;
+    }
+    if (line.trim().startsWith('```mermaid')) {
+      inCodeBlock = true;
+      currentCode = '';
+      currentDesc = blockDescLines.filter(l => l && !l.startsWith('#')).join(' ').trim();
+      if (!globalDesc) globalDesc = currentDesc;
+      blockDescLines = [];
+      continue;
+    }
+    if (inCodeBlock && line.trim() === '```') {
+      inCodeBlock = false;
+      const code = currentCode.trim();
+      if (code) {
+        const type = detectType(code);
+        blocks.push({ mermaidCode: code, type, description: currentDesc });
+      }
+      continue;
+    }
+    if (inCodeBlock) {
+      currentCode += line + '\n';
+    } else {
+      blockDescLines.push(line.trim());
+    }
+  }
+
+  if (blocks.length === 0) {
+    return { title, description: globalDesc, mermaidCode: '', type: 'unknown', blocks: [] };
+  } else if (blocks.length === 1) {
+    return { title, description: globalDesc || blocks[0].description, mermaidCode: blocks[0].mermaidCode, type: blocks[0].type, blocks };
+  } else {
+    return { title, description: globalDesc, mermaidCode: blocks[0].mermaidCode, type: blocks[0].type, blocks };
+  }
+}
+
+function detectType(code) {
+  if (!code || !code.trim()) return 'other';
+  const first = code.trim().split(/[\s\n]/)[0].toLowerCase().replace(/[^a-z0-9-]/g, '');
+  if (first === 'mindmap') return 'mindmap';
+  if (first === 'flowchart' || first === 'graph') return 'flowchart';
+  if (first === 'sequencediagram') return 'sequence';
+  if (first.startsWith('statediagram')) return 'state';
+  if (first === 'erdiagram') return 'er';
+  if (first === 'gantt') return 'gantt';
+  if (first === 'timeline') return 'timeline';
+  if (first === 'gitgraph') return 'git';
+  const lc = code.toLowerCase();
+  if (lc.includes('sequencediagram')) return 'sequence';
+  if (lc.includes('statediagram')) return 'state';
+  if (lc.includes('erdiagram')) return 'er';
+  if (lc.includes('flowchart') || lc.includes('graph ')) return 'flowchart';
+  return 'other';
+}
+
+function getTypeBadgeClass(type) {
+  const map = {
+    mindmap: 'mindmap', flowchart: 'flowchart', sequence: 'sequence',
+    state: 'state', er: 'er', gantt: 'gantt', timeline: 'timeline', git: 'git',
+  };
+  return map[type] || 'other';
+}
+
+function getTypeLabel(type) {
+  const map = {
+    mindmap: 'Mind Map', flowchart: 'Flowchart', sequence: 'Sequence',
+    state: 'State Machine', er: 'ER Diagram', gantt: 'Gantt Chart',
+    timeline: 'Timeline', git: 'Git Graph',
+  };
+  return map[type] || type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+// ─── MINDMAP → MARKDOWN CONVERTER ───
+function mermaidMindmapToMarkdown(code) {
+  const lines = code.split('\n');
+  let mdLines = [];
+  let rootFound = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trimStart();
+
+    if (trimmed === 'mindmap') continue;
+
+    const indent = line.length - line.trimStart().length;
+
+    let text = trimmed
+      .replace(/^root\(\((.+?)\)\)$/, '$1')
+      .replace(/^root\((.+?)\)$/, '$1')
+      .replace(/^root\[(.+?)\]$/, '$1')
+      .replace(/^root\{(.+?)\}$/, '$1')
+      .replace(/^\(\((.+?)\)\)$/, '$1')
+      .replace(/^\((.+?)\)$/, '$1')
+      .replace(/^\[(.+?)\]$/, '$1')
+      .replace(/^\{(.+?)\}$/, '$1')
+      .replace(/^:::[\w-]+\s*/, '')
+      .trim();
+
+    if (!text) continue;
+
+    if (trimmed.startsWith('root')) {
+      mdLines.push(`# ${text}`);
+      rootFound = true;
+      continue;
+    }
+
+    if (!rootFound) continue;
+
+    const depth = Math.round(indent / 2);
+
+    if (depth <= 2) {
+      mdLines.push(`## ${text}`);
+    } else if (depth <= 4) {
+      mdLines.push(`### ${text}`);
+    } else if (depth <= 6) {
+      mdLines.push(`- ${text}`);
+    } else {
+      mdLines.push(`${'  '.repeat(Math.max(0, depth - 6))}- ${text}`);
+    }
+  }
+
+  return mdLines.join('\n');
+}
+
+// ─── RENDERERS ───
+async function renderMindmap(container, mermaidCode) {
+  const md = mermaidMindmapToMarkdown(mermaidCode);
+  const transformer = new Transformer();
+  const { root } = transformer.transform(md);
+
+  const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svgEl.style.width = '100%';
+  svgEl.style.height = '100%';
+  container.appendChild(svgEl);
+
+  const mm = Markmap.create(svgEl, {
+    colorFreezeLevel: 2,
+    duration: 300,
+    maxWidth: 280,
+    paddingX: 20,
+    autoFit: true,
+  }, root);
+
+  setTimeout(() => mm.fit(), 100);
+
+  return { type: 'markmap', instance: mm };
+}
+
+// ─── JOURNEY MAP RENDERER (for sequence diagrams) ───
+function parseSequenceToJourney(mermaidCode) {
+  const lines = mermaidCode.split('\n').map(l => l.trim()).filter(l => l);
+  const actors = [];
+  const actorMap = {};
+  const phases = [];
+  let currentPhase = null;
+
+  const palette = ['#818cf8','#ef4444','#f59e0b','#10b981','#06b6d4','#8b5cf6','#ec4899','#64748b','#14b8a6','#f97316','#6366f1','#0891b2'];
+  const bgPalette = ['#eef2ff','#fef2f2','#fffbeb','#f0fdf4','#ecfeff','#f5f3ff','#fdf2f8','#f8fafc','#ccfbf1','#fff7ed','#e0e7ff','#cffafe'];
+  const phaseColors = ['#818cf8','#f59e0b','#10b981','#06b6d4','#ec4899','#ef4444','#8b5cf6','#14b8a6','#f97316','#6366f1'];
+  let phaseIdx = 0;
+
+  for (const line of lines) {
+    if (line.toLowerCase() === 'sequencediagram') continue;
+
+    const partMatch = line.match(/^participant\s+(\S+)\s+as\s+(.+)$/i);
+    if (partMatch) {
+      const id = partMatch[1];
+      const label = partMatch[2].trim();
+      const idx = actors.length;
+      const actor = { id, label, color: palette[idx % palette.length], bg: bgPalette[idx % bgPalette.length] };
+      actors.push(actor);
+      actorMap[id] = actor;
+      continue;
+    }
+
+    const noteMatch = line.match(/^Note\s+over\s+[^:]+:\s*(.+)$/i);
+    if (noteMatch) {
+      const label = noteMatch[1].trim();
+      currentPhase = { label, color: phaseColors[phaseIdx % phaseColors.length], msgs: [] };
+      phases.push(currentPhase);
+      phaseIdx++;
+      continue;
+    }
+
+    const msgMatch = line.match(/^(\S+?)\s*-?->>?\+?\s*-?\s*(\S+?)\s*:\s*(.+)$/);
+    if (msgMatch && currentPhase) {
+      const from = msgMatch[1];
+      const to = msgMatch[2];
+      const msg = msgMatch[3].trim();
+      currentPhase.msgs.push({ from, to, msg });
+      continue;
+    }
+
+    const dottedMatch = line.match(/^(\S+?)\s*--?>>\+?\s*(\S+?)\s*:\s*(.+)$/);
+    if (dottedMatch && currentPhase) {
+      currentPhase.msgs.push({ from: dottedMatch[1], to: dottedMatch[2], msg: dottedMatch[3].trim() });
+      continue;
+    }
+  }
+
+  if (phases.length === 0 && lines.length > 0) {
+    currentPhase = { label: 'Workflow', color: '#818cf8', msgs: [] };
+    phases.push(currentPhase);
+    for (const line of lines) {
+      const msgMatch = line.match(/^(\S+?)\s*-?->>?\+?\s*-?\s*(\S+?)\s*:\s*(.+)$/);
+      if (msgMatch) {
+        currentPhase.msgs.push({ from: msgMatch[1], to: msgMatch[2], msg: msgMatch[3].trim() });
+      }
+    }
+  }
+
+  return { actors, actorMap, phases };
+}
+
+async function renderJourneyMap(container, mermaidCode) {
+  const { actors, actorMap, phases } = parseSequenceToJourney(mermaidCode);
+
+  if (phases.length === 0 || phases.every(p => p.msgs.length === 0)) {
+    throw new Error('Could not parse sequence diagram into journey format');
+  }
+
+  const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svgEl.style.width = '100%';
+  svgEl.style.height = '100%';
+  svgEl.style.position = 'absolute';
+  svgEl.style.top = '0';
+  svgEl.style.left = '0';
+  container.style.position = 'relative';
+  container.appendChild(svgEl);
+
+  const svg = d3.select(svgEl);
+  const g = svg.append('g');
+  const zoom = d3.zoom().scaleExtent([0.1, 5]).on('zoom', e => g.attr('transform', e.transform));
+  svg.call(zoom);
+
+  const TRACK_Y = 80;
+  const CARD_TOP = 155;
+  const CARD_W = 280;
+  const CARD_H = 175;
+  const CARD_GAP = 36;
+  const PHASE_GAP = 90;
+  const LEGEND_Y = CARD_TOP + CARD_H + 80;
+  const F = 'Inter, -apple-system, sans-serif';
+
+  let curX = 80;
+  const totalW = phases.reduce((w, p) => w + Math.max(p.msgs.length, 1) * (CARD_W + CARD_GAP) + PHASE_GAP, 0) + 200;
+
+  // Background
+  g.append('rect').attr('width', totalW).attr('height', LEGEND_Y + 120).attr('fill', '#fafbfc').attr('rx', 12);
+
+  // Track line
+  g.append('line')
+    .attr('x1', 50).attr('y1', TRACK_Y)
+    .attr('x2', totalW - 50).attr('y2', TRACK_Y)
+    .attr('stroke', '#e5e7eb').attr('stroke-width', 4).attr('stroke-linecap', 'round');
+
+  let globalStep = 0;
+
+  phases.forEach((phase, pi) => {
+    const phaseStartX = curX;
+    const phaseEndX = curX + Math.max(phase.msgs.length, 1) * (CARD_W + CARD_GAP) - CARD_GAP;
+    const phaseMidX = (phaseStartX + phaseEndX) / 2;
+
+    // Phase bg band
+    g.append('rect')
+      .attr('x', phaseStartX - 20).attr('y', TRACK_Y - 50)
+      .attr('width', phaseEndX - phaseStartX + 40).attr('height', CARD_TOP + CARD_H - TRACK_Y + 80)
+      .attr('rx', 16).attr('fill', phase.color).attr('fill-opacity', 0.03);
+
+    // Track segment
+    g.append('line')
+      .attr('x1', phaseStartX - 14).attr('y1', TRACK_Y)
+      .attr('x2', phaseEndX + 14).attr('y2', TRACK_Y)
+      .attr('stroke', phase.color).attr('stroke-width', 4).attr('stroke-linecap', 'round')
+      .attr('stroke-opacity', 0.45);
+
+    // Diamond at phase start
+    if (pi > 0) {
+      const dx = phaseStartX - PHASE_GAP / 2;
+      g.append('g').attr('transform', `translate(${dx},${TRACK_Y}) rotate(45)`)
+        .append('rect').attr('x', -7).attr('y', -7).attr('width', 14).attr('height', 14).attr('rx', 3)
+        .attr('fill', phase.color).attr('filter', 'drop-shadow(0 1px 3px rgba(0,0,0,0.12))');
+    }
+
+    // Phase header pill
+    const labelW = phase.label.length * 7.5 + 32;
+    g.append('rect')
+      .attr('x', phaseMidX - labelW / 2).attr('y', TRACK_Y - 38)
+      .attr('width', labelW).attr('height', 28)
+      .attr('rx', 14).attr('fill', 'white')
+      .attr('stroke', phase.color).attr('stroke-width', 1.5)
+      .attr('filter', 'drop-shadow(0 1px 4px rgba(0,0,0,0.06))');
+    g.append('circle')
+      .attr('cx', phaseMidX - labelW / 2 + 16).attr('cy', TRACK_Y - 24)
+      .attr('r', 4).attr('fill', phase.color);
+    g.append('text')
+      .attr('x', phaseMidX + 6).attr('y', TRACK_Y - 20)
+      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', 700)
+      .attr('fill', phase.color).attr('font-family', F)
+      .text(phase.label);
+
+    // Connector to cards
+    g.append('line')
+      .attr('x1', phaseMidX).attr('y1', TRACK_Y + 6)
+      .attr('x2', phaseMidX).attr('y2', CARD_TOP - 14)
+      .attr('stroke', phase.color).attr('stroke-width', 1.5).attr('stroke-opacity', 0.15)
+      .attr('stroke-dasharray', '4,5');
+
+    // Cards
+    phase.msgs.forEach((m, mi) => {
+      globalStep++;
+      const cx = curX + mi * (CARD_W + CARD_GAP);
+      const cy = CARD_TOP;
+      const fromA = actorMap[m.from] || { label: m.from, color: '#64748b', bg: '#f8fafc' };
+      const toA = actorMap[m.to] || { label: m.to, color: '#64748b', bg: '#f8fafc' };
+      const isSelf = m.from === m.to;
+      const isStatus = m.msg.includes('Status') || m.msg.includes('status') || (m.msg.includes(':') && (m.msg.includes('\u2192') || m.msg.includes('->')));
+
+      const card = g.append('g').style('cursor', 'pointer');
+
+      // Shadow
+      card.append('rect').attr('class', 'card-shadow')
+        .attr('x', cx).attr('y', cy).attr('width', CARD_W).attr('height', CARD_H)
+        .attr('rx', 14).attr('fill', 'none')
+        .attr('filter', 'drop-shadow(0 2px 8px rgba(0,0,0,0.06))');
+
+      // Body
+      card.append('rect').attr('class', 'card-body')
+        .attr('x', cx).attr('y', cy).attr('width', CARD_W).attr('height', CARD_H)
+        .attr('rx', 14).attr('fill', 'white')
+        .attr('stroke', '#e5e7eb').attr('stroke-width', 1);
+
+      // Left accent
+      card.append('rect')
+        .attr('x', cx).attr('y', cy + 8).attr('width', 4).attr('height', CARD_H - 16)
+        .attr('rx', 2).attr('fill', phase.color);
+
+      // Status badge
+      const statusMatch = isStatus ? m.msg.match(/[Ss]tatus:?\s*(.+)/) : null;
+      const statusText = statusMatch ? statusMatch[1].trim() : null;
+
+      // Actor pills
+      const fromPill = `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:${fromA.bg};border:1px solid ${fromA.color}22;font-size:10px;font-weight:600;color:${fromA.color}"><span style="width:7px;height:7px;border-radius:50%;background:${fromA.color};flex-shrink:0"></span>${fromA.label}</span>`;
+      const toPill = isSelf
+        ? `<span style="font-size:10px;color:#9ca3af;font-style:italic;padding:0 4px">internal</span>`
+        : `<span style="color:#cbd5e1;padding:0 3px">\u2192</span><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:${toA.bg};border:1px solid ${toA.color}22;font-size:10px;font-weight:600;color:${toA.color}"><span style="width:7px;height:7px;border-radius:50%;background:${toA.color};flex-shrink:0"></span>${toA.label}</span>`;
+
+      const statusHtml = statusText
+        ? `<div style="margin-top:10px;padding:5px 10px;border-radius:6px;background:#fefce8;border:1px solid #fde68a;font-size:10px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:4px"><span style="font-size:12px">\u26A1</span>${statusText}</div>`
+        : '';
+
+      // foreignObject HTML card
+      const fo = card.append('foreignObject')
+        .attr('x', cx + 12).attr('y', cy + 10)
+        .attr('width', CARD_W - 24).attr('height', CARD_H - 20);
+
+      fo.append('xhtml:div')
+        .style('font-family', F)
+        .style('width', '100%').style('height', '100%')
+        .style('display', 'flex').style('flex-direction', 'column')
+        .style('pointer-events', 'none')
+        .html(`
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+            <div style="width:28px;height:28px;border-radius:8px;background:${phase.color};color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${globalStep}</div>
+            <div style="font-size:13px;font-weight:600;color:#111827;line-height:1.4;padding-top:3px">${m.msg}</div>
+          </div>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:auto">
+            ${fromPill}${toPill}
+          </div>
+          ${statusHtml}
+        `);
+
+      // Connection arrow to next card
+      if (mi < phase.msgs.length - 1) {
+        const ax1 = cx + CARD_W + 4;
+        const ax2 = cx + CARD_W + CARD_GAP - 4;
+        const ay = cy + CARD_H / 2;
+        g.append('line')
+          .attr('x1', ax1).attr('y1', ay).attr('x2', ax2).attr('y2', ay)
+          .attr('stroke', phase.color).attr('stroke-width', 2).attr('stroke-opacity', 0.35);
+        g.append('polygon')
+          .attr('points', `${ax2},${ay} ${ax2-7},${ay-4} ${ax2-7},${ay+4}`)
+          .attr('fill', phase.color).attr('fill-opacity', 0.35);
+      }
+
+      // Hover
+      card.on('mouseenter', function() {
+        d3.select(this).select('.card-body')
+          .attr('stroke', phase.color).attr('stroke-width', 2)
+          .attr('filter', 'drop-shadow(0 8px 24px rgba(0,0,0,0.1))');
+        d3.select(this).transition().duration(150).attr('transform', 'translate(0, -5)');
+      }).on('mouseleave', function() {
+        d3.select(this).select('.card-body')
+          .attr('stroke', '#e5e7eb').attr('stroke-width', 1)
+          .attr('filter', 'none');
+        d3.select(this).transition().duration(150).attr('transform', 'translate(0, 0)');
+      });
+    });
+
+    const phaseW = Math.max(phase.msgs.length, 1) * (CARD_W + CARD_GAP) - CARD_GAP;
+    curX += phaseW + PHASE_GAP;
+
+    // Curved arrow between phases
+    if (pi < phases.length - 1) {
+      const ax1 = curX - PHASE_GAP + 14;
+      const ax2 = curX - 14;
+      const ay = CARD_TOP + CARD_H / 2;
+      const midAX = (ax1 + ax2) / 2;
+      g.append('path')
+        .attr('d', `M ${ax1} ${ay} Q ${midAX} ${ay - 40}, ${ax2} ${ay}`)
+        .attr('fill', 'none').attr('stroke', '#cbd5e1').attr('stroke-width', 2)
+        .attr('stroke-dasharray', '6,4');
+      g.append('polygon')
+        .attr('points', `${ax2},${ay} ${ax2-7},${ay-4} ${ax2-7},${ay+4}`)
+        .attr('fill', '#cbd5e1');
+    }
+  });
+
+  // Actor legend
+  const legendX = 80;
+  g.append('rect')
+    .attr('x', legendX - 20).attr('y', LEGEND_Y - 16)
+    .attr('width', Math.min(totalW - 120, actors.length * 130 + 40)).attr('height', 56)
+    .attr('rx', 14).attr('fill', '#ffffff').attr('stroke', '#e5e7eb').attr('stroke-width', 1)
+    .attr('filter', 'drop-shadow(0 1px 4px rgba(0,0,0,0.04))');
+
+  let lx = legendX;
+  actors.forEach(a => {
+    const pillW = a.label.length * 7 + 28;
+    g.append('rect').attr('x', lx).attr('y', LEGEND_Y - 2).attr('width', pillW).attr('height', 28)
+      .attr('rx', 8).attr('fill', a.bg).attr('stroke', a.color + '33').attr('stroke-width', 1);
+    g.append('circle').attr('cx', lx + 12).attr('cy', LEGEND_Y + 12).attr('r', 5).attr('fill', a.color);
+    g.append('text').attr('x', lx + 22).attr('y', LEGEND_Y + 16)
+      .attr('font-size', '11px').attr('font-weight', 600).attr('fill', a.color).attr('font-family', F)
+      .text(a.label);
+    lx += pillW + 8;
+  });
+
+  // Fit to view
+  const containerRect = container.getBoundingClientRect();
+  const scaleX = (containerRect.width - 40) / totalW;
+  const scaleY = (containerRect.height - 40) / (LEGEND_Y + 120);
+  const scale = Math.min(scaleX, scaleY, 1);
+  const tx = (containerRect.width - totalW * scale) / 2;
+  const ty = (containerRect.height - (LEGEND_Y + 120) * scale) / 2;
+  svg.call(zoom.transform, d3.zoomIdentity.translate(tx, Math.max(ty, 10)).scale(scale));
+
+  currentZoomBehavior = zoom;
+  currentSvgSelection = svg;
+
+  return { type: 'journey', zoom, svg };
+}
+
+async function renderMermaid(container, mermaidCode, type) {
+  const id = `mermaid-${++mermaidIdCounter}`;
+
+  let cleanCode = mermaidCode.replace(/^\s*\n/, '').trim();
+  if (!cleanCode) throw new Error('Empty mermaid code block');
+
+  // Fix common Mermaid v11 issues
+  cleanCode = cleanCode.replace(/\|([^|]*)\(([^)]*)\)([^|]*)\|/g, '|$1$2$3|');
+  cleanCode = cleanCode.split('\n').filter(l => l.trim() !== '' || true).join('\n');
+
+  let svgOutput;
+  try {
+    const result = await mermaid.render(id, cleanCode);
+    svgOutput = result.svg || result;
+  } catch (mErr) {
+    document.querySelectorAll(`[id*="${id}"]`).forEach(el => el.remove());
+    document.querySelectorAll('.mermaid-error, .error-icon').forEach(el => el.remove());
+    console.error('Mermaid render failed for:', cleanCode.substring(0, 80), mErr);
+    throw new Error(`Mermaid parse error: ${mErr.message || String(mErr).substring(0, 200)}`);
+  }
+
+  const svgStr = svgOutput;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'mermaid-viewport';
+  wrapper.innerHTML = svgStr;
+  container.appendChild(wrapper);
+
+  const svgEl = wrapper.querySelector('svg');
+  if (!svgEl) return null;
+
+  const containerRect = container.getBoundingClientRect();
+  const svgRect = svgEl.getBoundingClientRect();
+
+  const svgD3 = d3.select(svgEl);
+
+  const origWidth = svgEl.getAttribute('width') || svgRect.width;
+  const origHeight = svgEl.getAttribute('height') || svgRect.height;
+
+  const innerContent = svgEl.innerHTML;
+  svgEl.innerHTML = '';
+
+  svgEl.setAttribute('width', '100%');
+  svgEl.setAttribute('height', '100%');
+  svgEl.style.width = '100%';
+  svgEl.style.height = '100%';
+  svgEl.style.position = 'absolute';
+  svgEl.style.top = '0';
+  svgEl.style.left = '0';
+  wrapper.style.position = 'relative';
+  wrapper.style.width = '100%';
+  wrapper.style.height = '100%';
+  wrapper.style.minWidth = '0';
+
+  const gEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  gEl.innerHTML = innerContent;
+  svgEl.appendChild(gEl);
+
+  const gSelection = d3.select(gEl);
+
+  const zoomBehavior = d3.zoom()
+    .scaleExtent([0.1, 5])
+    .on('zoom', (event) => {
+      gSelection.attr('transform', event.transform);
+    });
+
+  svgD3.call(zoomBehavior);
+
+  const parsedW = parseFloat(origWidth) || svgRect.width || 800;
+  const parsedH = parseFloat(origHeight) || svgRect.height || 600;
+  const pad = 80;
+  const scaleX = (containerRect.width - pad * 2) / parsedW;
+  const scaleY = (containerRect.height - pad * 2) / parsedH;
+  const fitScale = Math.min(scaleX, scaleY, 1.2);
+  const fitTx = (containerRect.width - parsedW * fitScale) / 2;
+  const fitTy = (containerRect.height - parsedH * fitScale) / 2;
+
+  svgD3.call(zoomBehavior.transform, d3.zoomIdentity.translate(fitTx, fitTy).scale(fitScale));
+
+  currentZoomBehavior = zoomBehavior;
+  currentSvgSelection = svgD3;
+
+  return { type: 'mermaid', zoom: zoomBehavior, svgD3 };
+}
+
+// ─── SELECT DIAGRAM ───
+async function selectDiagram(diag) {
+  if (activeDiagram && activeDiagram.file === diag.file) return;
+  activeDiagram = diag;
+  setActiveItem(diag.file);
+
+  // Reset viewport
+  $welcomeDisplay.style.display = 'none';
+  $errorDisplay.style.display = 'none';
+  $viewportLabel.style.display = 'none';
+  $reviewBtn.style.display = 'none';
+  $viewportToolbar.style.display = 'none';
+  $hint.style.display = 'none';
+  $diagramContainer.innerHTML = '';
+  $loadingOverlay.style.display = 'flex';
+
+  currentZoomBehavior = null;
+  currentSvgSelection = null;
+
+  try {
+    // Load from inline data or fall back to fetch
+    let content;
+    if (typeof DIAGRAM_DATA !== 'undefined' && DIAGRAM_DATA[diag.file]) {
+      content = DIAGRAM_DATA[diag.file];
+    } else {
+      const response = await fetch(diag.file);
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      content = await response.text();
+    }
+
+    const parsed = parseMdFile(content);
+    if (!parsed.mermaidCode && (!parsed.blocks || parsed.blocks.length === 0)) {
+      throw new Error('No mermaid code block found in this file.');
+    }
+
+    // Update label
+    $diagramTitle.textContent = parsed.title || diag.label;
+    $diagramDesc.textContent = parsed.description || '';
+    $typeBadge.textContent = getTypeLabel(parsed.type);
+    $typeBadge.className = `type-badge ${getTypeBadgeClass(parsed.type)}`;
+
+    // Render — handle single or multiple blocks
+    const blocksToRender = (parsed.blocks && parsed.blocks.length > 1) ? parsed.blocks : [{ mermaidCode: parsed.mermaidCode, type: parsed.type, description: '' }];
+
+    if (blocksToRender.length > 1) {
+      $diagramContainer.style.overflow = 'auto';
+      $diagramContainer.style.display = 'flex';
+      $diagramContainer.style.flexDirection = 'column';
+      $diagramContainer.style.gap = '24px';
+      $diagramContainer.style.padding = '16px';
+      $diagramContainer.style.position = 'relative';
+
+      for (let i = 0; i < blocksToRender.length; i++) {
+        const block = blocksToRender[i];
+        const section = document.createElement('div');
+        section.style.cssText = 'border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff;min-height:400px;position:relative;flex-shrink:0;';
+
+        if (block.description) {
+          const header = document.createElement('div');
+          header.style.cssText = 'padding:10px 16px;background:#f8f9fb;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;font-family:Inter,sans-serif;font-weight:500;';
+          header.textContent = block.description.substring(0, 120) || `Diagram ${i + 1} of ${blocksToRender.length}`;
+          section.appendChild(header);
+        }
+
+        const inner = document.createElement('div');
+        inner.style.cssText = 'width:100%;height:500px;position:relative;';
+        section.appendChild(inner);
+        $diagramContainer.appendChild(section);
+
+        try {
+          if (block.type === 'mindmap') {
+            await renderMindmap(inner, block.mermaidCode);
+          } else if (block.type === 'sequence') {
+            await renderJourneyMap(inner, block.mermaidCode);
+          } else {
+            await renderMermaid(inner, block.mermaidCode, block.type);
+          }
+        } catch (blockErr) {
+          console.error(`Block ${i+1} error:`, blockErr);
+          inner.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:13px;font-family:Inter,sans-serif;padding:20px;text-align:center;">
+            <div><strong>Render error (block ${i + 1} — ${block.type})</strong><br>${blockErr.message}</div>
+          </div>`;
+        }
+      }
+    } else {
+      if (parsed.type === 'mindmap') {
+        await renderMindmap($diagramContainer, parsed.mermaidCode);
+      } else if (parsed.type === 'sequence') {
+        await renderJourneyMap($diagramContainer, parsed.mermaidCode);
+      } else {
+        await renderMermaid($diagramContainer, parsed.mermaidCode, parsed.type);
+      }
+    }
+
+    // Show elements
+    $loadingOverlay.style.display = 'none';
+    $viewportLabel.style.display = 'block';
+    $reviewBtn.style.display = 'flex';
+    $viewportToolbar.style.display = 'flex';
+    $hint.style.display = 'block';
+    $diagramContainer.classList.add('fade-in');
+
+    if (feedbackPanelOpen) updateFeedbackPanel();
+
+  } catch (err) {
+    console.error('Diagram load error:', err);
+    $loadingOverlay.style.display = 'none';
+    $errorDisplay.style.display = 'flex';
+    $errorTitle.textContent = 'Failed to load diagram';
+    $errorMessage.textContent = err.message || 'An unexpected error occurred.';
+    $reviewBtn.style.display = 'flex';
+  }
+}
+
+// ─── ZOOM CONTROLS ───
+document.getElementById('zoomInBtn').addEventListener('click', () => {
+  if (currentZoomBehavior && currentSvgSelection) {
+    currentSvgSelection.transition().duration(200).call(currentZoomBehavior.scaleBy, 1.4);
+  }
+});
+
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
+  if (currentZoomBehavior && currentSvgSelection) {
+    currentSvgSelection.transition().duration(200).call(currentZoomBehavior.scaleBy, 0.7);
+  }
+});
+
+document.getElementById('fitBtn').addEventListener('click', () => {
+  if (currentZoomBehavior && currentSvgSelection) {
+    const containerRect = $diagramContainer.getBoundingClientRect();
+    const gNode = currentSvgSelection.select('g').node();
+    if (!gNode) return;
+    const bbox = gNode.getBBox();
+    const pad = 80;
+    const scaleX = (containerRect.width - pad * 2) / bbox.width;
+    const scaleY = (containerRect.height - pad * 2) / bbox.height;
+    const scale = Math.min(scaleX, scaleY, 1.5);
+    const tx = (containerRect.width - bbox.width * scale) / 2 - bbox.x * scale;
+    const ty = (containerRect.height - bbox.height * scale) / 2 - bbox.y * scale;
+    currentSvgSelection.transition().duration(400)
+      .call(currentZoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+  }
+});
+
+// ─── FEEDBACK PANEL ───
+function toggleFeedbackPanel(open) {
+  feedbackPanelOpen = open !== undefined ? open : !feedbackPanelOpen;
+  $feedbackPanel.classList.toggle('open', feedbackPanelOpen);
+  if (feedbackPanelOpen && activeDiagram) updateFeedbackPanel();
+}
+
+function updateFeedbackPanel() {
+  if (!activeDiagram) return;
+  const fb = getFeedback(activeDiagram.file);
+
+  $statusGroup.querySelectorAll('.status-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.status === fb.status);
+  });
+
+  $priorityGroup.querySelectorAll('.priority-pill').forEach(pill => {
+    pill.classList.toggle('selected', pill.dataset.priority === fb.priority);
+  });
+
+  renderComments(fb);
+}
+
+function renderComments(fb) {
+  $commentsList.innerHTML = '';
+  if (!fb.comments || fb.comments.length === 0) {
+    $commentsList.innerHTML = '<div class="empty-comments">No comments yet</div>';
+    return;
+  }
+
+  fb.comments.forEach((comment, idx) => {
+    const card = document.createElement('div');
+    card.className = `comment-card status-${fb.status}`;
+
+    const text = document.createElement('div');
+    text.className = 'comment-text';
+    text.textContent = comment.text;
+
+    const meta = document.createElement('div');
+    meta.className = 'comment-meta';
+
+    const time = document.createElement('span');
+    const date = new Date(comment.timestamp);
+    time.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+      ' at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'comment-delete';
+    delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', () => deleteComment(idx));
+
+    meta.appendChild(time);
+    meta.appendChild(delBtn);
+    card.appendChild(text);
+    card.appendChild(meta);
+    $commentsList.appendChild(card);
+  });
+
+  $commentsList.scrollTop = $commentsList.scrollHeight;
+}
+
+function deleteComment(idx) {
+  if (!activeDiagram) return;
+  const fb = getFeedback(activeDiagram.file);
+  fb.comments.splice(idx, 1);
+  setFeedback(activeDiagram.file, fb);
+  renderComments(fb);
+}
+
+// Status button clicks
+$statusGroup.addEventListener('click', (e) => {
+  const btn = e.target.closest('.status-btn');
+  if (!btn || !activeDiagram) return;
+  const fb = getFeedback(activeDiagram.file);
+  fb.status = btn.dataset.status;
+  setFeedback(activeDiagram.file, fb);
+  updateFeedbackPanel();
+});
+
+// Priority pill clicks
+$priorityGroup.addEventListener('click', (e) => {
+  const pill = e.target.closest('.priority-pill');
+  if (!pill || !activeDiagram) return;
+  const fb = getFeedback(activeDiagram.file);
+  fb.priority = pill.dataset.priority;
+  setFeedback(activeDiagram.file, fb);
+  updateFeedbackPanel();
+});
+
+// Add comment
+$commentInput.addEventListener('input', () => {
+  $addCommentBtn.disabled = !$commentInput.value.trim();
+  $commentInput.style.height = 'auto';
+  $commentInput.style.height = Math.min($commentInput.scrollHeight, 140) + 'px';
+});
+
+$addCommentBtn.addEventListener('click', addComment);
+
+function addComment() {
+  const text = $commentInput.value.trim();
+  if (!text || !activeDiagram) return;
+  const fb = getFeedback(activeDiagram.file);
+  if (!fb.comments) fb.comments = [];
+  fb.comments.push({
+    text,
+    timestamp: new Date().toISOString(),
+  });
+  setFeedback(activeDiagram.file, fb);
+  $commentInput.value = '';
+  $commentInput.style.height = 'auto';
+  $addCommentBtn.disabled = true;
+  renderComments(fb);
+  showToast('Comment added');
+}
+
+// Review button
+$reviewBtn.addEventListener('click', () => toggleFeedbackPanel());
+$feedbackClose.addEventListener('click', () => toggleFeedbackPanel(false));
+
+// Next unreviewed
+$nextUnreviewedBtn.addEventListener('click', () => {
+  const currentIdx = activeDiagram ? ALL_DIAGRAMS.findIndex(d => d.file === activeDiagram.file) : -1;
+  for (let i = 1; i <= TOTAL; i++) {
+    const idx = (currentIdx + i) % TOTAL;
+    const diag = ALL_DIAGRAMS[idx];
+    const fb = getFeedback(diag.file);
+    if (!fb.status || fb.status === 'not-reviewed') {
+      selectDiagram(diag);
+      return;
+    }
+  }
+  showToast('All diagrams have been reviewed!');
+});
+
+// ─── EXPORT ───
+function exportFeedback() {
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+
+  let reviewed = 0, approved = 0, needsChanges = 0, questions = 0;
+  const categorized = { 'needs-changes': [], 'question': [], 'approved': [] };
+
+  ALL_DIAGRAMS.forEach(diag => {
+    const fb = getFeedback(diag.file);
+    if (fb.status && fb.status !== 'not-reviewed') {
+      reviewed++;
+      if (fb.status === 'approved') { approved++; categorized['approved'].push({ diag, fb }); }
+      else if (fb.status === 'needs-changes') { needsChanges++; categorized['needs-changes'].push({ diag, fb }); }
+      else if (fb.status === 'question') { questions++; categorized['question'].push({ diag, fb }); }
+    }
+  });
+
+  function findLabel(file) {
+    for (const cat of CATEGORIES) {
+      for (const d of cat.diagrams) {
+        if (d.file === file) return d.label;
+      }
+    }
+    return file;
+  }
+
+  function priorityLabel(p) {
+    if (p === 'blocker') return 'Blocker';
+    if (p === 'important') return 'Important';
+    return 'Normal';
+  }
+
+  let md = `# {{PROJECT_NAME}} \u2014 Diagram Review Feedback\nGenerated: ${dateStr}\n\n`;
+  md += `## Summary\n`;
+  md += `- Total diagrams: ${TOTAL}\n`;
+  md += `- Reviewed: ${reviewed}\n`;
+  md += `- Approved: ${approved}\n`;
+  md += `- Needs Changes: ${needsChanges}\n`;
+  md += `- Questions: ${questions}\n`;
+  md += `- Not Reviewed: ${TOTAL - reviewed}\n\n`;
+
+  if (categorized['needs-changes'].length) {
+    md += `## \u26A1 Needs Changes\n\n`;
+    categorized['needs-changes'].forEach(({ diag, fb }) => {
+      md += `### ${findLabel(diag.file)} (${diag.file})\n`;
+      md += `**Status:** \u26A1 Needs Changes | **Priority:** ${priorityLabel(fb.priority)}\n`;
+      if (fb.comments && fb.comments.length) {
+        fb.comments.forEach(c => {
+          const d = new Date(c.timestamp);
+          const ds = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          md += `- "${c.text}" \u2014 ${ds}\n`;
+        });
+      }
+      md += '\n';
+    });
+  }
+
+  if (categorized['question'].length) {
+    md += `## \u2753 Questions\n\n`;
+    categorized['question'].forEach(({ diag, fb }) => {
+      md += `### ${findLabel(diag.file)} (${diag.file})\n`;
+      md += `**Status:** ? Question | **Priority:** ${priorityLabel(fb.priority)}\n`;
+      if (fb.comments && fb.comments.length) {
+        fb.comments.forEach(c => {
+          const d = new Date(c.timestamp);
+          const ds = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          md += `- "${c.text}" \u2014 ${ds}\n`;
+        });
+      }
+      md += '\n';
+    });
+  }
+
+  if (categorized['approved'].length) {
+    md += `## \u2713 Approved\n\n`;
+    categorized['approved'].forEach(({ diag, fb }) => {
+      md += `### ${findLabel(diag.file)} \u2014 \u2713 Approved\n`;
+      if (fb.comments && fb.comments.length) {
+        fb.comments.forEach(c => {
+          const d = new Date(c.timestamp);
+          const ds = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          md += `- "${c.text}" \u2014 ${ds}\n`;
+        });
+      } else {
+        md += `- No comments\n`;
+      }
+      md += '\n';
+    });
+  }
+
+  const notReviewed = ALL_DIAGRAMS.filter(d => {
+    const fb = getFeedback(d.file);
+    return !fb.status || fb.status === 'not-reviewed';
+  });
+  if (notReviewed.length) {
+    md += `## Not Reviewed\n\n`;
+    notReviewed.forEach(d => {
+      md += `- ${findLabel(d.file)} (${d.file})\n`;
+    });
+    md += '\n';
+  }
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `{{PROJECT_SLUG}}-feedback-${dateStr}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Feedback exported successfully');
+}
+
+$exportBtn.addEventListener('click', exportFeedback);
+
+// ─── TOAST ───
+let toastTimeout = null;
+function showToast(msg) {
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => $toast.classList.remove('show'), 2200);
+}
+
+// ─── KEYBOARD SHORTCUTS ───
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && feedbackPanelOpen) {
+    toggleFeedbackPanel(false);
+    e.preventDefault();
+  }
+  if (e.key === 'e' && (e.ctrlKey || e.metaKey)) {
+    exportFeedback();
+    e.preventDefault();
+  }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && document.activeElement === $commentInput) {
+    addComment();
+    e.preventDefault();
+  }
+});
+
+// ─── INIT ───
+loadFeedback();
+buildSidebar();
+updateProgress();
+
+// Sidebar collapse toggle
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  $sidebar.classList.toggle('collapsed');
+});
+</script>
+</body>
+</html>

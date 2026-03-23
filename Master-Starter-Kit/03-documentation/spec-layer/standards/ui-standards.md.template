@@ -1,0 +1,73 @@
+# {{PROJECT_NAME}} — UI Standards
+
+---
+
+## Component Library
+
+- **Base library:** {{COMPONENT_LIBRARY}} <!-- shadcn/ui / Radix / MUI / Ant Design -->
+- **Customization:** Override via design tokens, not inline styles
+- **Icons:** {{ICON_LIBRARY}} <!-- Lucide / Heroicons / Phosphor -->
+
+---
+
+## Status Colors
+
+| Status | Color Token | Hex | Usage |
+|---|---|---|---|
+| Success / Active | `--color-success` | {{COLOR_SUCCESS}} | Completed, active, online |
+| Warning / Pending | `--color-warning` | {{COLOR_WARNING}} | Needs attention, in progress |
+| Error / Cancelled | `--color-destructive` | {{COLOR_DESTRUCTIVE}} | Failed, cancelled, overdue |
+| Info / Draft | `--color-info` | {{COLOR_INFO}} | Informational, draft |
+| Neutral / Inactive | `--color-muted` | {{COLOR_MUTED}} | Disabled, archived |
+
+---
+
+## Spacing Scale
+
+| Token | Value | Usage |
+|---|---|---|
+| `--spacing-xs` | 4px | Tight gaps, icon padding |
+| `--spacing-sm` | 8px | Compact elements |
+| `--spacing-md` | 16px | Standard gaps |
+| `--spacing-lg` | 24px | Section spacing |
+| `--spacing-xl` | 32px | Page sections |
+| `--spacing-2xl` | 48px | Major sections |
+
+---
+
+## Typography
+
+| Level | Font | Size | Weight | Line Height |
+|---|---|---|---|---|
+| H1 | {{FONT_FAMILY}} | 30px | 700 | 1.2 |
+| H2 | {{FONT_FAMILY}} | 24px | 600 | 1.3 |
+| H3 | {{FONT_FAMILY}} | 20px | 600 | 1.4 |
+| Body | {{FONT_FAMILY}} | 14px | 400 | 1.5 |
+| Small | {{FONT_FAMILY}} | 12px | 400 | 1.5 |
+| Label | {{FONT_FAMILY}} | 12px | 500 | 1.0 |
+
+---
+
+## Responsive Breakpoints
+
+| Breakpoint | Width | Target |
+|---|---|---|
+| `sm` | 640px | Mobile landscape |
+| `md` | 768px | Tablet |
+| `lg` | 1024px | Small desktop |
+| `xl` | 1280px | Standard desktop |
+| `2xl` | 1536px | Large desktop |
+
+---
+
+## Accessibility Requirements
+
+- **Contrast:** WCAG AA minimum (4.5:1 for text, 3:1 for large text)
+- **Focus indicators:** Visible focus ring on all interactive elements
+- **Keyboard:** All actions reachable via keyboard
+- **ARIA:** Labels on icon-only buttons, live regions for dynamic content
+- **Motion:** Respect `prefers-reduced-motion` media query
+
+---
+
+*Last updated: {{LAST_UPDATED}}*

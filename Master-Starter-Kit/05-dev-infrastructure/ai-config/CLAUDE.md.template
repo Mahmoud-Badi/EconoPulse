@@ -1,0 +1,353 @@
+# {{PROJECT_NAME}}
+
+> **Claude Code primary instruction file** -- loaded automatically on every session.
+> Read the IDENTITY section first. It defines who you are for this project.
+
+---
+
+## IDENTITY
+
+{{AGENT_IDENTITY_BLOCK}}
+
+<!-- Generated at Step 2.5 from 48-ai-agent-personas/archetypes/{{AGENT_ARCHETYPE}}.md -->
+<!-- If this block is empty, the persona has not been generated yet. Run Step 2.5. -->
+
+---
+
+## DOMAIN KNOWLEDGE
+
+{{AGENT_DOMAIN_KNOWLEDGE}}
+
+<!-- Project-specific domain expertise generated at Step 2.5. -->
+<!-- This section contains industry terminology, business rules, edge cases, and gotchas. -->
+<!-- The AI must internalize this before making any domain-related decision. -->
+
+---
+
+## PRIME DIRECTIVES
+
+{{AGENT_PRIME_DIRECTIVES}}
+
+<!-- Non-negotiable behavioral rules generated at Step 2.5. -->
+<!-- Each directive has a number, explanation, and "Why" rationale. -->
+<!-- Violating a prime directive is always wrong, regardless of context. -->
+
+---
+
+## PERSPECTIVE CHECKS
+
+{{AGENT_PERSPECTIVE_CHECKS}}
+
+<!-- Multi-stakeholder viewpoint gates generated at Step 2.5. -->
+<!-- Before finalizing ANY user-facing change, answer ALL perspective check questions. -->
+<!-- If any answer is "no" or "not sure," do not ship. Fix first. -->
+
+---
+
+## ANTI-PATTERNS
+
+{{AGENT_ANTI_PATTERNS}}
+
+<!-- Domain-specific "never do this" rules generated at Step 2.5. -->
+<!-- Each anti-pattern states the harm it causes and what to do instead. -->
+
+---
+
+## PROJECT CONTEXT
+
+| Key | Value |
+|-----|-------|
+| Stack | {{FRONTEND_FRAMEWORK}}, {{BACKEND_FRAMEWORK}}, {{DATABASE}}, {{ORM}}, {{CSS_FRAMEWORK}} |
+| Repo | `{{GITHUB_ORG}}/{{REPO_NAME}}` |
+| Monorepo | {{MONOREPO_TOOL}} -- `{{FRONTEND_APP_PATH}}` (frontend), `{{BACKEND_APP_PATH}}` (backend) |
+| MVP scope | {{MVP_SCOPE_SUMMARY}} |
+
+---
+
+## 1. Current State
+
+| Area | Grade | Status |
+|------|-------|--------|
+| {{AREA_1_NAME}} | {{AREA_1_GRADE}} | {{AREA_1_STATUS}} |
+| {{AREA_2_NAME}} | {{AREA_2_GRADE}} | {{AREA_2_STATUS}} |
+| {{AREA_3_NAME}} | {{AREA_3_GRADE}} | {{AREA_3_STATUS}} |
+| {{AREA_4_NAME}} | {{AREA_4_GRADE}} | {{AREA_4_STATUS}} |
+| {{AREA_5_NAME}} | {{AREA_5_GRADE}} | {{AREA_5_STATUS}} |
+
+---
+
+## 2. UI Strategy
+
+- **Design system:** {{DESIGN_SYSTEM_LIBRARY}} + custom design tokens
+- **Token architecture:** {{TOKEN_ARCHITECTURE_DESCRIPTION}}
+- **Component library location:** `{{COMPONENT_LIBRARY_PATH}}`
+- **Storybook:** `{{PKG_MANAGER}} storybook` on port {{STORYBOOK_PORT}}
+<!-- If using conditional theming: -->
+<!-- - Change `{{THEME_VARIABLE}}` to rebrand the entire application -->
+
+---
+
+## 3. MVP Scope
+
+| # | Service / Feature | Screens | Priority |
+|---|-------------------|---------|----------|
+| 1 | {{SERVICE_1_NAME}} | {{SERVICE_1_SCREENS}} | {{SERVICE_1_PRIORITY}} |
+| 2 | {{SERVICE_2_NAME}} | {{SERVICE_2_SCREENS}} | {{SERVICE_2_PRIORITY}} |
+| 3 | {{SERVICE_3_NAME}} | {{SERVICE_3_SCREENS}} | {{SERVICE_3_PRIORITY}} |
+| 4 | {{SERVICE_4_NAME}} | {{SERVICE_4_SCREENS}} | {{SERVICE_4_PRIORITY}} |
+| 5 | {{SERVICE_5_NAME}} | {{SERVICE_5_SCREENS}} | {{SERVICE_5_PRIORITY}} |
+<!-- Add or remove rows as needed -->
+
+---
+
+## 4. Known Issues
+
+<!-- List top 3-5 known bugs or architectural issues -->
+1. {{KNOWN_ISSUE_1}}
+2. {{KNOWN_ISSUE_2}}
+3. {{KNOWN_ISSUE_3}}
+
+---
+
+## 5. Session Protocol
+
+Every session, follow this sequence:
+
+1. **Read the service hub file** -- `{{SERVICE_HUB_PATH}}/{service}.md`
+2. **Read STATUS.md** -- `{{STATUS_FILE_PATH}}`
+3. **Read the task file** -- `{{TASK_FILES_PATH}}/{task-id}.md`
+4. **Max 6 files** before you start coding (anti-context-rot rule)
+5. Code, test, verify
+6. Update STATUS.md and work log before session ends
+
+---
+
+## 6. Essential Reading Order
+
+1. This file (`CLAUDE.md`)
+2. `{{STATUS_FILE_PATH}}` -- task dashboard
+3. `{{SERVICE_HUB_PATH}}/_index.md` -- service overview
+4. `{{DOCS_PATH}}/{{FOUNDATIONS_DIR}}/session-kickoff.md`
+5. `{{DOCS_PATH}}/{{FOUNDATIONS_DIR}}/quality-gates.md`
+
+---
+
+## 7. Commands
+
+### Dev
+```bash
+{{PKG_MANAGER}} dev              # Start all services
+{{PKG_MANAGER}} dev:frontend     # Frontend only (port {{FRONTEND_PORT}})
+{{PKG_MANAGER}} dev:backend      # Backend only (port {{BACKEND_PORT}})
+```
+
+### Build & Verify
+```bash
+{{PKG_MANAGER}} build            # Production build
+{{PKG_MANAGER}} lint             # Lint all packages
+{{PKG_MANAGER}} check-types      # TypeScript type checking
+```
+
+### Database
+<!-- Prisma ORM block (remove if not using Prisma) -->
+```bash
+{{PKG_MANAGER}} db:migrate       # {{ORM}} migrate dev
+{{PKG_MANAGER}} db:generate      # {{ORM}} generate client
+{{PKG_MANAGER}} db:seed          # Seed database
+{{PKG_MANAGER}} db:studio        # {{ORM}} Studio GUI
+```
+<!-- Drizzle ORM block (remove if not using Drizzle) -->
+<!-- ```bash
+{{PKG_MANAGER}} db:push          # drizzle-kit push
+{{PKG_MANAGER}} db:generate      # drizzle-kit generate
+{{PKG_MANAGER}} db:studio        # drizzle-kit studio
+``` -->
+
+### Testing
+```bash
+{{PKG_MANAGER}} test             # Run all tests
+{{PKG_MANAGER}} test:watch       # Watch mode
+{{PKG_MANAGER}} test:coverage    # Coverage report
+{{PKG_MANAGER}} test:e2e         # End-to-end tests
+```
+
+---
+
+## 8. Architecture
+
+```
+{{PROJECT_NAME}}
+├── {{FRONTEND_APP_PATH}}/
+│   ├── app/                     # {{FRONTEND_FRAMEWORK}} app directory
+│   │   ├── ({{AUTH_LAYOUT}})/   # Authenticated routes
+│   │   └── ({{PUBLIC_LAYOUT}})/ # Public routes
+│   ├── components/
+│   │   ├── ui/                  # {{DESIGN_SYSTEM_LIBRARY}} primitives
+│   │   └── {{CUSTOM_COMPONENTS_DIR}}/  # Domain components
+│   ├── lib/                     # Utilities, API client, hooks
+│   └── stories/                 # Storybook stories
+├── {{BACKEND_APP_PATH}}/
+│   ├── src/
+│   │   ├── modules/             # Feature modules
+│   │   ├── common/              # Shared guards, decorators, pipes
+│   │   └── prisma/              # Database client
+│   └── test/                    # E2E tests
+├── {{SHARED_PACKAGES_PATH}}/    # Shared types, utils
+└── {{CONFIG_FILES_NOTE}}
+```
+
+---
+
+## 9. Golden Rules
+
+1. **Backend services are REAL** -- wire up to existing endpoints, do NOT rebuild
+2. **Max 6 files** before coding (anti-context-rot)
+3. **Always unwrap API envelopes** -- backend returns `{ data, meta, message }`; extract `.data`
+4. **Test before marking done** -- run `{{PKG_MANAGER}} test` and `{{PKG_MANAGER}} build`
+5. **Never touch the PROTECT LIST** without explicit approval
+
+---
+
+## 10. Code Conventions
+
+### API Response Format
+```typescript
+// Backend returns this envelope -- ALWAYS unwrap in frontend
+interface ApiResponse<T> {
+  data: T;
+  meta?: { total: number; page: number; limit: number };
+  message?: string;
+}
+```
+
+### Auth Guards
+```typescript
+// {{BACKEND_FRAMEWORK}} guard pattern
+@UseGuards({{AUTH_GUARD_NAME}})
+@{{TENANT_DECORATOR}}()  // Multi-tenant isolation
+```
+
+### Multi-Tenant Queries
+```typescript
+// EVERY database query MUST include tenant isolation
+where: {
+  {{TENANT_ID_FIELD}}: {{TENANT_ID_SOURCE}},
+  deletedAt: null,  // Soft delete filter
+  ...otherFilters,
+}
+```
+
+### Import Conventions
+```typescript
+// Path alias
+import { Component } from '{{PATH_ALIAS}}/components/...';
+import { apiClient } from '{{PATH_ALIAS}}/lib/api';
+```
+
+---
+
+## 11. Key Files
+
+| File | Purpose |
+|------|---------|
+| `{{FRONTEND_APP_PATH}}/lib/api.ts` | API client with auth headers |
+| `{{FRONTEND_APP_PATH}}/lib/auth.ts` | Auth context and hooks |
+| `{{BACKEND_APP_PATH}}/src/common/guards/` | Auth & role guards |
+| `{{BACKEND_APP_PATH}}/prisma/schema.prisma` | Database schema |
+| `{{STATUS_FILE_PATH}}` | Task dashboard |
+| `{{SERVICE_HUB_PATH}}/_index.md` | Service overview |
+
+---
+
+## 12. Environment Variables
+
+```env
+# Frontend ({{FRONTEND_APP_PATH}}/.env.local)
+{{FRONTEND_ENV_PREFIX}}_API_URL={{API_URL_DEFAULT}}
+{{FRONTEND_ENV_PREFIX}}_WS_URL={{WS_URL_DEFAULT}}
+
+# Backend ({{BACKEND_APP_PATH}}/.env)
+DATABASE_URL={{DATABASE_URL_DEFAULT}}
+JWT_SECRET={{JWT_SECRET_PLACEHOLDER}}
+{{ADDITIONAL_ENV_VARS}}
+```
+
+---
+
+## 13. Design System
+
+- **Library:** {{DESIGN_SYSTEM_LIBRARY}}
+- **Custom tokens:** `{{GLOBALS_CSS_PATH}}`
+- **Token layers:** brand -> semantic -> utility (3-layer architecture)
+- **Components:** {{COMPONENT_COUNT}} in `{{COMPONENT_LIBRARY_PATH}}`
+- **Stories:** {{STORY_COUNT}} in `{{STORIES_PATH}}`
+- **Key variables:**
+  - `--brand-hue` / `--brand-primary` -- primary accent color
+  - `--radius` -- border radius scale
+  - `--font-family` -- typography
+
+---
+
+## 14. Plugin Workflow
+
+| Plugin | Purpose | When to Use |
+|--------|---------|-------------|
+| context7 | Documentation lookup | Before using unfamiliar APIs |
+| feature-dev | Feature scaffolding | Starting a new feature |
+| code-review | Code review | Before marking task complete |
+| playwright | E2E testing | Testing user flows |
+| typescript-lsp | Type checking | Debugging type errors |
+| security-guidance | Security audit | Auth/payment features |
+| pr-review-toolkit | PR review | Before merging |
+
+---
+
+## 15. Gotchas
+
+1. **Multi-tenant isolation** -- EVERY query must filter by `{{TENANT_ID_FIELD}}`. Missing this = data leak.
+2. **Soft delete** -- Always add `deletedAt: null` to queries. Records are never hard-deleted.
+3. **API proxy** -- Frontend proxies `/api/*` to backend. Check `{{PROXY_CONFIG_PATH}}` for the rewrite rules.
+4. **Strict mode** -- {{FRONTEND_FRAMEWORK}} strict mode is ON. Effects run twice in dev -- account for this.
+5. **WebSocket reconnection** -- WS provider must handle reconnection gracefully. Check for infinite re-render loops.
+6. **ORM client generation** -- After schema changes, run `{{PKG_MANAGER}} db:generate` before `{{PKG_MANAGER}} dev`.
+7. **Path aliases** -- `{{PATH_ALIAS}}/` resolves to `{{PATH_ALIAS_TARGET}}`. SWC/bundler resolves these before test runner module mappers.
+8. **Date handling** -- All dates stored as UTC in database. Convert to local time only in the UI layer.
+9. **Pagination** -- Backend defaults to `limit: 20`. Always pass pagination params explicitly.
+10. **File uploads** -- Max size: {{MAX_UPLOAD_SIZE}}. Use multipart/form-data, not base64.
+
+---
+
+## Codebase Metrics (verified {{METRICS_DATE}})
+
+| Metric | Count |
+|--------|-------|
+| Frontend Routes | {{ROUTE_COUNT}} |
+| Components | {{COMPONENT_COUNT}} |
+| Hooks | {{HOOK_COUNT}} |
+| Backend Modules | {{MODULE_COUNT}} |
+| Database Models | {{MODEL_COUNT}} |
+| Tests | {{TEST_COUNT}} passing ({{COVERAGE_PCT}}% coverage) |
+
+---
+
+## Anti-Patterns (read before coding)
+
+See `{{DOCS_PATH}}/quality-testing/anti-pattern-system/ANTI-PATTERN-STARTER.md` for the full list. Key rules:
+1. **Always unwrap API envelope** — `response.data.data` not `response.data`
+2. **Every query must filter by tenant** — `where: { {{TENANT_ID_FIELD}}: ..., deletedAt: null }`
+3. **No stub buttons** — every button has a handler OR is disabled with tooltip
+4. **All 4 UI states** — loading, error, empty, data on every data component
+5. **No `any` types** — use `unknown` + type guards if type is truly unknown
+
+---
+
+## PROTECT LIST
+
+> Do NOT modify these files/routes without explicit approval:
+
+| File / Route | Reason |
+|-------------|--------|
+| {{PROTECT_1_PATH}} | {{PROTECT_1_REASON}} |
+| {{PROTECT_2_PATH}} | {{PROTECT_2_REASON}} |
+| {{PROTECT_3_PATH}} | {{PROTECT_3_REASON}} |
+<!-- Add rows as needed -->

@@ -1,0 +1,75 @@
+# =============================================================================
+# pre-merge-check.yml — Full Gate Check Before Merge
+#
+# Runs the master gate-checker for the current step and validates state file
+# freshness. Blocks merge if any gate fails.
+#
+# Set the CURRENT_STEP variable in your repository settings or pass via
+# workflow_dispatch to specify which gate to validate.
+# =============================================================================
+
+name: Pre-Merge Gate Check
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      step:
+        description: 'Orchestrator step number to validate (e.g., 5, 8.5, 16.5)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gate-check:
+    name: Gate Check — Step ${{ inputs.step || vars.CURRENT_STEP || '5' }}
+    runs-on: ubuntu-latest
+
+    env:
+      GATE_STEP: ${{ inputs.step || vars.CURRENT_STEP || '5' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Python (for JSON parsing)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Make validators executable
+        run: chmod +x tools/validators/*.sh
+
+      - name: Run state file freshness check
+        id: state
+        run: |
+          echo "## State File Freshness" >> $GITHUB_STEP_SUMMARY
+          if bash tools/validators/validate-state-files.sh dev_docs 2>&1 | tee /tmp/state-output.txt; then
+            echo "✅ State files are current" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ State files are stale or missing" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/state-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "::error::State files are stale or missing"
+          fi
+
+      - name: Run master gate checker
+        id: gate
+        run: |
+          echo "## Gate Check — Step ${GATE_STEP}" >> $GITHUB_STEP_SUMMARY
+          if bash tools/validators/gate-checker.sh "${GATE_STEP}" dev_docs 2>&1 | tee /tmp/gate-output.txt; then
+            echo "✅ Gate ${GATE_STEP} passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Gate ${GATE_STEP} failed" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/gate-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "::error::Gate ${GATE_STEP} failed — merge blocked"
+            exit 1
+          fi

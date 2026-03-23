@@ -1,0 +1,63 @@
+# {{PROJECT_NAME}} — User Personas
+
+## Persona Index
+
+| # | Role | Priority | Description |
+|---|---|---|---|
+| 1 | {{PERSONA_1_ROLE}} | Primary | {{PERSONA_1_SUMMARY}} |
+| 2 | {{PERSONA_2_ROLE}} | Primary | {{PERSONA_2_SUMMARY}} |
+| 3 | {{PERSONA_3_ROLE}} | Secondary | {{PERSONA_3_SUMMARY}} |
+
+---
+
+## Persona 1: {{PERSONA_1_ROLE}}
+
+**Name archetype:** {{PERSONA_1_NAME}}
+**Role:** {{PERSONA_1_ROLE}}
+
+### Goals
+- {{PERSONA_1_GOAL_1}}
+- {{PERSONA_1_GOAL_2}}
+- {{PERSONA_1_GOAL_3}}
+
+### Pain Points
+- {{PERSONA_1_PAIN_1}}
+- {{PERSONA_1_PAIN_2}}
+- {{PERSONA_1_PAIN_3}}
+
+### Feature Priorities
+1. {{PERSONA_1_FEATURE_1}}
+2. {{PERSONA_1_FEATURE_2}}
+3. {{PERSONA_1_FEATURE_3}}
+
+### Deal-Breakers
+- {{PERSONA_1_DEALBREAKER_1}}
+- {{PERSONA_1_DEALBREAKER_2}}
+
+---
+
+## Persona 2: {{PERSONA_2_ROLE}}
+
+**Name archetype:** {{PERSONA_2_NAME}}
+**Role:** {{PERSONA_2_ROLE}}
+
+### Goals
+- {{PERSONA_2_GOAL_1}}
+- {{PERSONA_2_GOAL_2}}
+
+### Pain Points
+- {{PERSONA_2_PAIN_1}}
+- {{PERSONA_2_PAIN_2}}
+
+### Feature Priorities
+1. {{PERSONA_2_FEATURE_1}}
+2. {{PERSONA_2_FEATURE_2}}
+
+### Deal-Breakers
+- {{PERSONA_2_DEALBREAKER_1}}
+
+---
+
+<!-- Copy the persona block above for additional personas -->
+
+*Last updated: {{LAST_UPDATED}}*

@@ -1,0 +1,277 @@
+# /scaffold-test — Generate Test File from Component or Module
+
+Generate a test file for the given component or module. Target: **$ARGUMENTS**
+
+## Configuration
+
+- **Project root:** `{{PROJECT_ROOT}}`
+- **Frontend source:** `{{FRONTEND_SRC}}`
+- **Backend source:** `{{BACKEND_SRC}}`
+- **Test config (frontend):** `{{FRONTEND_TEST_CONFIG}}`
+- **Test config (backend):** `{{BACKEND_TEST_CONFIG}}`
+- **Test command:** `{{TEST_CMD}}`
+
+## Instructions
+
+### Step 1: Identify the Target
+
+1. **Parse arguments** — the user provides a file path or component/module name.
+2. **Read the target file** to understand its exports, props, API, and dependencies.
+3. **Determine test type**: frontend component test or backend service/controller test.
+
+### Step 2: Generate Frontend Test
+<!-- IF {{FRONTEND_FRAMEWORK}} != "none" -->
+
+For frontend components/pages, generate a test file at the same level with `.test.tsx` extension:
+
+```typescript
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+// Import the component under test
+// Mock hooks and dependencies
+
+// Mock React Query hooks
+jest.mock('@/lib/hooks/{resource}', () => ({
+  use{Resource}s: jest.fn(),
+  useCreate{Resource}: jest.fn(),
+  // ...
+}));
+
+// Mock Next.js navigation (if applicable)
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useParams: () => ({ id: 'test-id' }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+describe('{ComponentName}', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('Loading State', () => {
+    it('renders loading skeleton when data is loading', () => {
+      // Mock hook to return isLoading: true
+      // Render component
+      // Assert skeleton/spinner visible
+    });
+  });
+
+  describe('Error State', () => {
+    it('renders error message with retry button', () => {
+      // Mock hook to return error
+      // Assert error message and retry button
+    });
+  });
+
+  describe('Empty State', () => {
+    it('renders empty state with CTA', () => {
+      // Mock hook to return empty data
+      // Assert empty message and create button
+    });
+  });
+
+  describe('Success State', () => {
+    it('renders data correctly', () => {
+      // Mock hook to return data
+      // Assert data is displayed
+    });
+  });
+
+  describe('User Interactions', () => {
+    it('handles [action] correctly', async () => {
+      // Setup
+      // Act with userEvent
+      // Assert expected behavior
+    });
+  });
+});
+```
+
+Key patterns:
+- Mock all hooks at the module level
+- Test all 4 states (loading, error, empty, success)
+- Use `userEvent` for interactions (not `fireEvent`)
+- Use `waitFor` for async assertions
+- Mock `useRouter` and `useParams` from next/navigation
+<!-- ENDIF -->
+
+### Step 3: Generate Backend Test
+<!-- IF {{BACKEND_FRAMEWORK}} != "none" -->
+
+For backend services/controllers, generate a `.spec.ts` file:
+
+<!-- IF {{BACKEND_FRAMEWORK}} == "nestjs" -->
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+// Import service/controller under test
+// Import mocked dependencies
+
+const mockPrisma = {
+  {model}: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
+};
+
+describe('{Resource}sService', () => {
+  let service: {Resource}sService;
+  const tenantId = 'test-tenant-id';
+  const userId = 'test-user-id';
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        {Resource}sService,
+        { provide: PrismaService, useValue: mockPrisma },
+      ],
+    }).compile();
+    service = module.get({Resource}sService);
+    jest.clearAllMocks();
+  });
+
+  describe('findAll', () => {
+    it('returns paginated results filtered by tenant', async () => {
+      // Arrange: mock prisma response
+      // Act: call service.findAll(tenantId, query)
+      // Assert: correct where clause with tenantId and deletedAt: null
+    });
+  });
+
+  describe('create', () => {
+    it('creates with tenant isolation', async () => {
+      // Assert tenantId is included in create data
+    });
+  });
+
+  describe('delete', () => {
+    it('performs soft delete', async () => {
+      // Assert update with deletedAt, not actual delete
+    });
+  });
+});
+```
+<!-- ENDIF -->
+
+<!-- IF {{BACKEND_FRAMEWORK}} == "express" -->
+Use supertest for HTTP-level tests:
+```typescript
+import request from 'supertest';
+import app from '../app';
+
+describe('GET /api/{resource}s', () => {
+  it('returns 200 with paginated results', async () => {
+    const res = await request(app).get('/api/{resource}s').set('Authorization', 'Bearer test-token');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeDefined();
+  });
+});
+```
+<!-- ENDIF -->
+
+<!-- IF {{BACKEND_FRAMEWORK}} == "fastapi" -->
+Use pytest with TestClient:
+```python
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+def test_list_{resource}s():
+    response = client.get("/api/{resource}s", headers={"Authorization": "Bearer test"})
+    assert response.status_code == 200
+    assert "data" in response.json()
+```
+<!-- ENDIF -->
+
+<!-- IF {{BACKEND_FRAMEWORK}} == "django" -->
+Use Django's test client:
+```python
+from django.test import TestCase
+from django.urls import reverse
+
+class {Resource}ViewTests(TestCase):
+    def setUp(self):
+        self.client.login(username='testuser', password='testpass')
+
+    def test_list_{resource}s(self):
+        response = self.client.get(reverse('{resource}-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data', response.json())
+
+    def test_create_{resource}(self):
+        response = self.client.post(reverse('{resource}-create'), data={...})
+        self.assertEqual(response.status_code, 201)
+
+    def test_unauthorized_access(self):
+        self.client.logout()
+        response = self.client.get(reverse('{resource}-list'))
+        self.assertEqual(response.status_code, 401)
+```
+<!-- ENDIF -->
+
+<!-- IF {{BACKEND_FRAMEWORK}} == "rails" -->
+Use RSpec with request specs:
+```ruby
+require 'rails_helper'
+
+RSpec.describe "Api::{Resource}s", type: :request do
+  let(:user) { create(:user) }
+  let(:headers) { auth_headers(user) }
+
+  describe "GET /api/{resource}s" do
+    it "returns paginated results" do
+      create_list(:{resource}, 3)
+      get "/api/{resource}s", headers: headers
+      expect(response).to have_http_status(:ok)
+      expect(json_response["data"].length).to eq(3)
+    end
+  end
+
+  describe "POST /api/{resource}s" do
+    it "creates a new {resource}" do
+      post "/api/{resource}s", params: { {resource}: valid_attributes }, headers: headers
+      expect(response).to have_http_status(:created)
+    end
+  end
+end
+```
+<!-- ENDIF -->
+<!-- ENDIF -->
+
+### Step 4: Additional Test Patterns
+
+Include these patterns when relevant to the target:
+
+**Error response handling:**
+```
+- Test 400 responses for invalid input
+- Test 404 responses for missing resources
+- Test 403 responses for unauthorized access
+```
+
+**Pagination (for list endpoints/pages):**
+```
+- Test default page size
+- Test custom page/limit params
+- Test empty results
+- Test total count accuracy
+```
+
+**Form validation (for form components):**
+```
+- Test required field validation messages
+- Test field format validation (email, phone, etc.)
+- Test successful submission
+- Test submission error handling
+```
+
+### Step 5: Verify
+
+1. **Run the test**: `{{TEST_CMD}} -- --testPathPattern={test-file}`
+2. **Verify all tests pass** — if any fail, fix the test (not the source code).
+3. **Show a summary**: test count, pass/fail status, and file path of the generated test.

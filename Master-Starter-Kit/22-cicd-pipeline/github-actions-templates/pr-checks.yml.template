@@ -1,0 +1,518 @@
+# PR Checks for {{PROJECT_NAME}}
+#
+# > PR-specific checks: lint only changed files, run affected tests, build a preview,
+# > and post the preview URL as a PR comment. Fast feedback on every push.
+#
+# Placeholders:
+#   {{PROJECT_NAME}}       - Project/repo name
+#   {{PKG_MANAGER}}        - Package manager (npm, pnpm, yarn, bun)
+#   {{NODE_VERSION}}       - Node.js version (e.g., 20, 22)
+#   {{LOCKFILE}}           - Lockfile name
+#   {{HOSTING_PROVIDER}}   - Hosting provider (vercel, railway, aws)
+#   {{FRONTEND_FRAMEWORK}} - Frontend framework (next, remix, vite, astro)
+
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  NODE_VERSION: '{{NODE_VERSION}}'
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Detect which files changed to run targeted checks
+  # ──────────────────────────────────────────────
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      tests: ${{ steps.filter.outputs.tests }}
+      docs: ${{ steps.filter.outputs.docs }}
+      dependencies: ${{ steps.filter.outputs.dependencies }}
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'src/**/*.tsx'
+              - 'src/**/*.ts'
+              - 'src/**/*.css'
+              - 'src/**/*.scss'
+              - 'src/components/**'
+              - 'src/pages/**'
+              - 'src/app/**'
+              - 'public/**'
+            backend:
+              - 'src/api/**'
+              - 'src/server/**'
+              - 'src/lib/**'
+              - 'prisma/**'
+              - 'drizzle/**'
+            tests:
+              - 'src/**/*.test.*'
+              - 'src/**/*.spec.*'
+              - 'tests/**'
+              - 'e2e/**'
+              - 'vitest.config.*'
+              - 'jest.config.*'
+              - 'playwright.config.*'
+            docs:
+              - '**/*.md'
+              - 'docs/**'
+            dependencies:
+              - 'package.json'
+              - '{{LOCKFILE}}'
+              - '.npmrc'
+            ci:
+              - '.github/workflows/**'
+
+  # ──────────────────────────────────────────────
+  # Install dependencies
+  # ──────────────────────────────────────────────
+  install:
+    name: Install
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('{{LOCKFILE}}') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "npm" -->
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('{{LOCKFILE}}') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "yarn" -->
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # <!-- ENDIF -->
+
+      - name: Cache node_modules
+        uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+  # ──────────────────────────────────────────────
+  # Lint changed files only (fast)
+  # ──────────────────────────────────────────────
+  lint:
+    name: Lint Changed Files
+    runs-on: ubuntu-latest
+    needs: [install, changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      # <!-- ENDIF -->
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          CHANGED=$(git diff --name-only --diff-filter=ACMR origin/${{ github.base_ref }}...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | tr '\n' ' ')
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          echo "Changed files: $CHANGED"
+
+      - name: Lint changed files
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          npx eslint ${{ steps.changed-files.outputs.files }} --max-warnings=0
+
+      - name: Check formatting of changed files
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          npx prettier --check ${{ steps.changed-files.outputs.files }}
+
+  # ──────────────────────────────────────────────
+  # Type check (full — incremental is not reliable for PRs)
+  # ──────────────────────────────────────────────
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: [install, changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      # <!-- ENDIF -->
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+      - name: TypeScript check
+        run: {{PKG_MANAGER}} run type-check
+
+  # ──────────────────────────────────────────────
+  # Run affected tests only
+  # ──────────────────────────────────────────────
+  test:
+    name: Test Affected
+    runs-on: ubuntu-latest
+    needs: [install, changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.tests == 'true' || needs.changes.outputs.dependencies == 'true'
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      # <!-- ENDIF -->
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+      - name: Run affected tests
+        run: |
+          # Run tests related to changed files using Vitest's --changed flag
+          # or Jest's --changedSince flag
+          {{PKG_MANAGER}} run test -- --changed --reporter=default --reporter=junit --outputFile=test-results/junit.xml
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-test-results
+          path: test-results/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────
+  # Build check (verify the project builds)
+  # ──────────────────────────────────────────────
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    needs: [install, changes]
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.dependencies == 'true'
+    timeout-minutes: 10
+    outputs:
+      build_success: ${{ steps.build.outcome }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      # <!-- ENDIF -->
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+      # <!-- IF {{FRONTEND_FRAMEWORK}} == "next" -->
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-pr-${{ github.event.pull_request.number }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            nextjs-pr-${{ github.event.pull_request.number }}-
+            nextjs-
+      # <!-- ENDIF -->
+
+      - name: Build
+        id: build
+        run: {{PKG_MANAGER}} run build
+        env:
+          NODE_ENV: production
+
+      # Optional: Bundle size analysis
+      # - name: Analyze bundle size
+      #   run: |
+      #     npx @next/bundle-analyzer analyze
+      #     # or: npx vite-bundle-visualizer
+
+  # ──────────────────────────────────────────────
+  # Deploy Preview
+  # ──────────────────────────────────────────────
+  preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: success()
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # <!-- IF {{HOSTING_PROVIDER}} == "vercel" -->
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy preview to Vercel
+        id: preview-deploy
+        run: |
+          PREVIEW_URL=$(vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --yes 2>&1 | tail -1)
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $PREVIEW_URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # <!-- ENDIF -->
+
+      # <!-- IF {{HOSTING_PROVIDER}} == "railway" -->
+      - name: Deploy preview to Railway
+        id: preview-deploy
+        run: |
+          npm install -g @railway/cli
+          PREVIEW_URL=$(railway up --environment pr-${{ github.event.pull_request.number }} 2>&1 | grep -o 'https://[^ ]*')
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      # <!-- ENDIF -->
+
+      # <!-- IF {{HOSTING_PROVIDER}} == "aws" -->
+      - name: Deploy preview to S3 + CloudFront
+        id: preview-deploy
+        run: |
+          aws s3 sync dist/ s3://{{PROJECT_NAME}}-previews/pr-${{ github.event.pull_request.number }}/ --delete
+          PREVIEW_URL="https://previews.{{PROJECT_NAME}}.com/pr-${{ github.event.pull_request.number }}"
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+      # <!-- ENDIF -->
+
+      - name: Post preview URL as PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: preview-url
+          message: |
+            ## Preview Deployment
+
+            | Status | URL |
+            |--------|-----|
+            | Deployed | [${{ steps.preview-deploy.outputs.preview_url }}](${{ steps.preview-deploy.outputs.preview_url }}) |
+
+            **Commit:** `${{ github.event.pull_request.head.sha }}`
+            **Updated:** ${{ github.event.pull_request.updated_at }}
+
+            ---
+            _This preview will be updated on every push to this PR._
+
+  # ──────────────────────────────────────────────
+  # Security: Dependency audit
+  # ──────────────────────────────────────────────
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    needs: [install, changes]
+    if: needs.changes.outputs.dependencies == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      # <!-- ENDIF -->
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+      - name: Audit dependencies
+        run: |
+          # <!-- IF {{PKG_MANAGER}} == "npm" -->
+          npm audit --audit-level=high
+          # <!-- ENDIF -->
+          # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+          pnpm audit --audit-level=high
+          # <!-- ENDIF -->
+          # <!-- IF {{PKG_MANAGER}} == "yarn" -->
+          yarn audit --level high
+          # <!-- ENDIF -->
+
+  # ──────────────────────────────────────────────
+  # PR Status Summary
+  # ──────────────────────────────────────────────
+  pr-status:
+    name: PR Status
+    runs-on: ubuntu-latest
+    needs: [changes, lint, type-check, test, build]
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Evaluate results
+        run: |
+          echo "=== PR Check Results ==="
+          echo "Changes detected:"
+          echo "  Frontend: ${{ needs.changes.outputs.frontend }}"
+          echo "  Backend: ${{ needs.changes.outputs.backend }}"
+          echo "  Tests: ${{ needs.changes.outputs.tests }}"
+          echo "  Dependencies: ${{ needs.changes.outputs.dependencies }}"
+          echo ""
+          echo "Job results:"
+          echo "  Lint: ${{ needs.lint.result }}"
+          echo "  Type Check: ${{ needs.type-check.result }}"
+          echo "  Tests: ${{ needs.test.result }}"
+          echo "  Build: ${{ needs.build.result }}"
+
+          # Fail if any non-skipped job failed
+          FAILED=false
+          for result in "${{ needs.lint.result }}" "${{ needs.type-check.result }}" "${{ needs.test.result }}" "${{ needs.build.result }}"; do
+            if [ "$result" = "failure" ]; then
+              FAILED=true
+            fi
+          done
+
+          if [ "$FAILED" = true ]; then
+            echo "::error::One or more PR checks failed"
+            exit 1
+          fi
+          echo "All PR checks passed (or were skipped due to no relevant changes)"

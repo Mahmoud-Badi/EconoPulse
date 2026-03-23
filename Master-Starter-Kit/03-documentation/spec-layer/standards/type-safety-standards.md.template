@@ -1,0 +1,87 @@
+# {{PROJECT_NAME}} — Type Safety Standards
+
+---
+
+## Core Rules
+
+1. **No `any`** — ever. Use `unknown` if the type is truly unknown, then narrow.
+2. **Strict mode** — `"strict": true` in `tsconfig.json` (or equivalent).
+3. **API types match runtime** — Response types must reflect what the API actually returns, including the envelope.
+4. **Validate at boundaries** — Use runtime validation (Zod) at every external data boundary (API responses, form inputs, URL params).
+5. **Generate, don't duplicate** — Types for database models should be generated from the schema, not hand-written.
+
+---
+
+## Strict Mode Settings
+
+<!-- IF {{STACK}} == "javascript" -->
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false
+  }
+}
+```
+<!-- ENDIF -->
+
+<!-- IF {{STACK}} == "python" -->
+```toml
+# pyproject.toml
+[tool.mypy]
+strict = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+```
+<!-- ENDIF -->
+
+---
+
+## Runtime Validation
+
+- Use {{VALIDATION_LIBRARY}} <!-- Zod / Yup / io-ts / Pydantic --> for runtime validation
+- Define schemas alongside types, or generate types from schemas
+- Validate all: API responses, form submissions, URL parameters, environment variables
+
+```typescript
+// Example: Zod schema + inferred type
+const LoadSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['PENDING', 'ACTIVE', 'DELIVERED']),
+  // ...
+});
+type Load = z.infer<typeof LoadSchema>;
+```
+
+---
+
+## API Response Types
+
+```typescript
+// Standard envelope type
+interface ApiResponse<T> {
+  data: T;
+  pagination: Pagination | null;
+  error: ApiError | null;
+}
+
+// Usage: always type the inner data
+const response = await api.get<ApiResponse<Load[]>>('/loads');
+const loads = response.data.data; // correctly typed as Load[]
+```
+
+---
+
+## Type Generation
+
+- **Database models:** Generated from {{ORM}} schema (e.g., `prisma generate`)
+- **API contracts:** Shared types between frontend and backend
+- **Location:** `{{SHARED_TYPES_PATH}}`
+- **Regeneration:** Run `{{TYPE_GEN_CMD}}` after schema changes
+
+---
+
+*Last updated: {{LAST_UPDATED}}*

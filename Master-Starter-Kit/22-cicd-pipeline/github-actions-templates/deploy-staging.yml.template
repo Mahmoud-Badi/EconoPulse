@@ -1,0 +1,409 @@
+# Deploy to Staging for {{PROJECT_NAME}}
+#
+# > Automatically deploy to staging when code is pushed to the develop or main branch.
+# > Runs the full test suite, builds, deploys, and verifies with smoke tests.
+#
+# Placeholders:
+#   {{PROJECT_NAME}}       - Project/repo name
+#   {{PKG_MANAGER}}        - Package manager (npm, pnpm, yarn, bun)
+#   {{NODE_VERSION}}       - Node.js version (e.g., 20, 22)
+#   {{LOCKFILE}}           - Lockfile name
+#   {{HOSTING_PROVIDER}}   - Hosting provider (vercel, railway, aws)
+#   {{STAGING_URL}}        - Staging environment URL
+#   {{FRONTEND_FRAMEWORK}} - Frontend framework (next, remix, vite, astro)
+
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (emergency only — requires justification)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false  # Do not cancel in-progress deploys
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  NODE_VERSION: '{{NODE_VERSION}}'
+  STAGING_URL: '{{STAGING_URL}}'
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Stage 1: Install and cache dependencies
+  # ──────────────────────────────────────────────
+  install:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('{{LOCKFILE}}') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "npm" -->
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('{{LOCKFILE}}') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "yarn" -->
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # <!-- ENDIF -->
+
+      - name: Cache node_modules for downstream jobs
+        uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+  # ──────────────────────────────────────────────
+  # Stage 2: Test (skip if emergency override)
+  # ──────────────────────────────────────────────
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: [install]
+    if: ${{ !inputs.skip_tests }}
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: {{PROJECT_NAME}}_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      # <!-- ENDIF -->
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+      - name: Run linter
+        run: {{PKG_MANAGER}} run lint
+
+      - name: Run type check
+        run: {{PKG_MANAGER}} run type-check
+
+      - name: Run unit tests
+        run: {{PKG_MANAGER}} run test
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/{{PROJECT_NAME}}_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Run integration tests
+        run: {{PKG_MANAGER}} run test:integration
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/{{PROJECT_NAME}}_test
+          REDIS_URL: redis://localhost:6379
+
+  # ──────────────────────────────────────────────
+  # Stage 3: Build
+  # ──────────────────────────────────────────────
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [install, test]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # <!-- IF {{PKG_MANAGER}} == "pnpm" -->
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      # <!-- ENDIF -->
+
+      # <!-- IF {{PKG_MANAGER}} == "bun" -->
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      # <!-- ENDIF -->
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ github.sha }}
+
+      # <!-- IF {{FRONTEND_FRAMEWORK}} == "next" -->
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-
+      # <!-- ENDIF -->
+
+      - name: Build
+        run: {{PKG_MANAGER}} run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            dist/
+            .next/
+            build/
+            !.next/cache/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────
+  # Stage 4: Deploy to Staging
+  # ──────────────────────────────────────────────
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 10
+    environment:
+      name: staging
+      url: ${{ env.STAGING_URL }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
+      # <!-- IF {{HOSTING_PROVIDER}} == "vercel" -->
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel (Staging)
+        id: vercel-deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --yes)
+          echo "deploy_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $DEPLOY_URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # <!-- ENDIF -->
+
+      # <!-- IF {{HOSTING_PROVIDER}} == "railway" -->
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway (Staging)
+        run: railway up --environment staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      # <!-- ENDIF -->
+
+      # <!-- IF {{HOSTING_PROVIDER}} == "aws" -->
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG=${{ steps.ecr-login.outputs.registry }}/{{PROJECT_NAME}}:staging-${{ github.sha }}
+          docker build -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster {{PROJECT_NAME}}-staging \
+            --service {{PROJECT_NAME}}-staging \
+            --force-new-deployment
+      # <!-- ENDIF -->
+
+  # ──────────────────────────────────────────────
+  # Stage 5: Smoke Tests
+  # ──────────────────────────────────────────────
+  smoke-test:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    timeout-minutes: 5
+    steps:
+      - name: Wait for deployment to stabilize
+        run: sleep 15
+
+      - name: Health check
+        run: |
+          echo "Running smoke tests against ${{ env.STAGING_URL }}"
+          for i in {1..12}; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.STAGING_URL }}/api/health" || echo "000")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i: got HTTP $HTTP_STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Smoke test failed after 12 attempts (2 minutes)"
+          exit 1
+
+      - name: Verify critical endpoints
+        run: |
+          # Check homepage
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.STAGING_URL }}")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "::error::Homepage returned $HTTP_STATUS"
+            exit 1
+          fi
+          echo "Homepage: OK ($HTTP_STATUS)"
+
+          # Check API health
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.STAGING_URL }}/api/health")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "::error::API health endpoint returned $HTTP_STATUS"
+            exit 1
+          fi
+          echo "API health: OK ($HTTP_STATUS)"
+
+          echo "All smoke tests passed"
+
+  # ──────────────────────────────────────────────
+  # Notifications
+  # ──────────────────────────────────────────────
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [deploy, smoke-test]
+    if: always()
+    steps:
+      - name: Notify on success
+        if: needs.smoke-test.result == 'success'
+        run: |
+          echo "Staging deployment successful"
+          echo "URL: ${{ env.STAGING_URL }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+        # Uncomment to send Slack notification:
+        # uses: slackapi/slack-github-action@v1
+        # with:
+        #   payload: |
+        #     {
+        #       "text": "Staging deploy successful for {{PROJECT_NAME}}\nURL: ${{ env.STAGING_URL }}\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}"
+        #     }
+        # env:
+        #   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify on failure
+        if: needs.deploy.result == 'failure' || needs.smoke-test.result == 'failure'
+        run: |
+          echo "::error::Staging deployment or smoke test failed"
+          echo "Deploy result: ${{ needs.deploy.result }}"
+          echo "Smoke test result: ${{ needs.smoke-test.result }}"
+          exit 1
+        # Uncomment to send Slack notification:
+        # uses: slackapi/slack-github-action@v1
+        # with:
+        #   payload: |
+        #     {
+        #       "text": ":x: Staging deploy FAILED for {{PROJECT_NAME}}\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}\nCheck: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        #     }
+        # env:
+        #   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,380 @@
+# =============================================================================
+# Flutter Test Configuration Guide
+# =============================================================================
+#
+# Flutter does not use a single test configuration file. Instead, testing is
+# configured across multiple files: analysis_options.yaml, pubspec.yaml,
+# integration test drivers, and golden test configuration. This guide provides
+# the complete setup for each.
+#
+# Replace all {{PLACEHOLDERS}} with your project values.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. analysis_options.yaml -- Lint Rules for Test Code
+# -----------------------------------------------------------------------------
+# Place at project root. These rules enforce test quality alongside app code.
+#
+# ```yaml
+# # analysis_options.yaml
+# include: package:flutter_lints/flutter.yaml
+#
+# analyzer:
+#   errors:
+#     # Treat these as errors, not warnings
+#     dead_code: error
+#     unused_import: error
+#     unused_local_variable: warning
+#   exclude:
+#     # Do not analyze generated code
+#     - "**/*.g.dart"
+#     - "**/*.freezed.dart"
+#     - "**/*.mocks.dart"
+#
+# linter:
+#   rules:
+#     # General
+#     prefer_const_constructors: true
+#     prefer_const_declarations: true
+#     avoid_print: true
+#     prefer_single_quotes: true
+#
+#     # Test-specific -- these keep test code readable
+#     no_duplicate_case_values: true
+#     prefer_void_to_null: true
+#     unnecessary_statements: true
+#     always_declare_return_types: true
+# ```
+
+# -----------------------------------------------------------------------------
+# 2. pubspec.yaml -- Test Dependencies
+# -----------------------------------------------------------------------------
+# Add these under dev_dependencies in your pubspec.yaml:
+#
+# ```yaml
+# dev_dependencies:
+#   # Core testing
+#   flutter_test:
+#     sdk: flutter
+#   integration_test:
+#     sdk: flutter
+#
+#   # Mocking
+#   mockito: ^5.4.0
+#   build_runner: ^2.4.0          # Required for mockito code generation
+#
+#   # Or use mocktail (no code generation needed)
+#   mocktail: ^1.0.0
+#
+#   # Golden tests (optional, for visual snapshot testing)
+#   golden_toolkit: ^0.15.0
+#
+#   # Bloc testing (if using bloc/cubit for state management)
+#   bloc_test: ^9.1.0
+#
+#   # Network mocking
+#   http_mock_adapter: ^0.6.0    # For dio
+#   nock: ^1.2.0                 # For http package
+# ```
+
+# -----------------------------------------------------------------------------
+# 3. Test Directory Structure
+# -----------------------------------------------------------------------------
+# Flutter expects this structure:
+#
+# ```
+# {{APP_SLUG}}/
+#   lib/
+#     main.dart
+#     screens/
+#       login_screen.dart
+#       home_screen.dart
+#     widgets/
+#       profile_card.dart
+#     services/
+#       auth_service.dart
+#     models/
+#       user.dart
+#
+#   test/                              # Unit + widget tests (run with: flutter test)
+#     screens/
+#       login_screen_test.dart
+#       home_screen_test.dart
+#     widgets/
+#       profile_card_test.dart
+#       goldens/                       # Golden baseline images
+#         profile_card.png
+#     services/
+#       auth_service_test.dart
+#     models/
+#       user_test.dart
+#     helpers/
+#       test_helpers.dart              # Shared test utilities
+#       pump_app.dart                  # Wrapper for pumping widgets with providers
+#
+#   integration_test/                  # Integration tests (run on device/emulator)
+#     app_test.dart                    # Full app integration test
+#     auth_flow_test.dart              # Authentication flow test
+#
+#   test_driver/                       # Driver for Firebase Test Lab
+#     integration_test.dart
+# ```
+
+# -----------------------------------------------------------------------------
+# 4. Integration Test Driver (for Firebase Test Lab)
+# -----------------------------------------------------------------------------
+# This file is required to run integration tests on Firebase Test Lab.
+# Place at test_driver/integration_test.dart:
+#
+# ```dart
+# // test_driver/integration_test.dart
+# import 'package:integration_test/integration_test_driver_extended.dart';
+#
+# Future<void> main() async {
+#   await integrationDriver();
+# }
+# ```
+
+# -----------------------------------------------------------------------------
+# 5. Integration Test Setup
+# -----------------------------------------------------------------------------
+# Each integration test file needs the binding initialized.
+# Place test files in integration_test/:
+#
+# ```dart
+# // integration_test/app_test.dart
+# import 'package:flutter_test/flutter_test.dart';
+# import 'package:integration_test/integration_test.dart';
+# import 'package:{{APP_SLUG}}/main.dart' as app;
+#
+# void main() {
+#   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+#
+#   group('App Launch', () {
+#     testWidgets('app starts and shows login screen', (tester) async {
+#       app.main();
+#       await tester.pumpAndSettle();
+#
+#       // Verify the login screen is displayed
+#       expect(find.byKey(const Key('login-screen')), findsOneWidget);
+#     });
+#   });
+#
+#   group('Authentication', () {
+#     testWidgets('login with valid credentials navigates to home',
+#         (tester) async {
+#       app.main();
+#       await tester.pumpAndSettle();
+#
+#       // Enter credentials
+#       await tester.enterText(
+#         find.byKey(const Key('email-input')),
+#         'test@example.com',
+#       );
+#       await tester.enterText(
+#         find.byKey(const Key('password-input')),
+#         'password123',
+#       );
+#
+#       // Tap login
+#       await tester.tap(find.byKey(const Key('login-button')));
+#       await tester.pumpAndSettle(const Duration(seconds: 5));
+#
+#       // Verify navigation to home
+#       expect(find.byKey(const Key('home-screen')), findsOneWidget);
+#     });
+#   });
+# }
+# ```
+
+# -----------------------------------------------------------------------------
+# 6. Golden Test Configuration
+# -----------------------------------------------------------------------------
+# Golden tests capture visual snapshots of widgets and compare them against
+# baseline images. If the rendered output changes, the test fails.
+#
+# Using golden_toolkit for enhanced golden testing:
+#
+# ```dart
+# // test/widgets/profile_card_golden_test.dart
+# import 'package:flutter_test/flutter_test.dart';
+# import 'package:golden_toolkit/golden_toolkit.dart';
+# import 'package:{{APP_SLUG}}/widgets/profile_card.dart';
+#
+# void main() {
+#   // Load fonts before golden tests (required for text rendering)
+#   setUpAll(() async {
+#     await loadAppFonts();
+#   });
+#
+#   testGoldens('ProfileCard renders correctly', (tester) async {
+#     final builder = GoldenBuilder.column()
+#       ..addScenario(
+#         'Default state',
+#         ProfileCard(user: User(name: 'Jane Doe', email: 'jane@example.com')),
+#       )
+#       ..addScenario(
+#         'Long name',
+#         ProfileCard(
+#           user: User(
+#             name: 'Jane Elizabeth Doe-Richardson',
+#             email: 'jane@example.com',
+#           ),
+#         ),
+#       )
+#       ..addScenario(
+#         'Loading state',
+#         const ProfileCard(user: null),
+#       );
+#
+#     await tester.pumpWidgetBuilder(
+#       builder.build(),
+#       surfaceSize: const Size(400, 600),
+#     );
+#
+#     await screenMatchesGolden(tester, 'profile_card_states');
+#   });
+#
+#   // Test across multiple device sizes
+#   testGoldens('ProfileCard responsive layout', (tester) async {
+#     await tester.pumpWidgetBuilder(
+#       ProfileCard(user: User(name: 'Jane Doe', email: 'jane@example.com')),
+#       wrapper: materialAppWrapper(),
+#     );
+#
+#     await multiScreenGolden(
+#       tester,
+#       'profile_card_responsive',
+#       devices: [
+#         Device.phone,
+#         Device.iphone11,
+#         Device.tabletPortrait,
+#         Device.tabletLandscape,
+#       ],
+#     );
+#   });
+# }
+# ```
+#
+# Golden test commands:
+#   flutter test --update-goldens    # Generate/update baseline images
+#   flutter test                     # Compare against baselines (fails on diff)
+#
+# IMPORTANT: Golden images are platform-dependent (font rendering differs
+# between macOS, Linux, Windows). Generate baselines on the same OS as CI.
+# If CI runs on Linux, generate goldens on Linux (or use Docker).
+
+# -----------------------------------------------------------------------------
+# 7. Test Coverage Configuration
+# -----------------------------------------------------------------------------
+# Flutter has built-in coverage support via lcov:
+#
+# ```bash
+# # Run tests with coverage
+# flutter test --coverage
+#
+# # Output: coverage/lcov.info
+#
+# # Generate HTML report (requires lcov installed)
+# genhtml coverage/lcov.info -o coverage/html
+# open coverage/html/index.html
+#
+# # Enforce minimum coverage in CI
+# flutter test --coverage
+# # Parse lcov.info and fail if below threshold
+# ```
+#
+# CI coverage check script:
+#
+# ```bash
+# #!/bin/bash
+# # scripts/check_coverage.sh
+# MIN_COVERAGE=70
+#
+# flutter test --coverage
+#
+# # Extract total coverage percentage
+# COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+#
+# echo "Coverage: ${COVERAGE}%"
+#
+# if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+#   echo "Coverage ${COVERAGE}% is below minimum ${MIN_COVERAGE}%"
+#   exit 1
+# fi
+# ```
+
+# -----------------------------------------------------------------------------
+# 8. Test Helper Utilities
+# -----------------------------------------------------------------------------
+# Create shared test helpers to reduce boilerplate:
+#
+# ```dart
+# // test/helpers/pump_app.dart
+# import 'package:flutter/material.dart';
+# import 'package:flutter_test/flutter_test.dart';
+# // Import your providers, themes, and localization here
+#
+# extension PumpApp on WidgetTester {
+#   /// Pumps a widget wrapped with all necessary providers,
+#   /// theme, and localization -- matching the real app setup.
+#   Future<void> pumpApp(Widget widget) async {
+#     await pumpWidget(
+#       MaterialApp(
+#         // Use the same theme as the real app
+#         theme: AppTheme.light,
+#         darkTheme: AppTheme.dark,
+#         // Add providers your widgets depend on
+#         home: widget,
+#       ),
+#     );
+#     await pumpAndSettle();
+#   }
+# }
+# ```
+#
+# ```dart
+# // test/helpers/test_helpers.dart
+# import 'package:{{APP_SLUG}}/models/user.dart';
+#
+# /// Factory functions for test data
+# class TestData {
+#   static User user({
+#     String name = 'Jane Doe',
+#     String email = 'jane@example.com',
+#     String? avatar,
+#   }) {
+#     return User(name: name, email: email, avatar: avatar);
+#   }
+# }
+# ```
+
+# -----------------------------------------------------------------------------
+# 9. Running Tests
+# -----------------------------------------------------------------------------
+# Quick reference for all test commands:
+#
+# Unit + Widget tests:
+#   flutter test                           # Run all tests in test/
+#   flutter test test/widgets/             # Run tests in a specific directory
+#   flutter test --coverage                # Run with coverage report
+#   flutter test --update-goldens          # Update golden baselines
+#
+# Integration tests (requires running device/emulator):
+#   flutter test integration_test/         # Run all integration tests
+#   flutter test integration_test/auth_flow_test.dart  # Run specific test
+#
+# Integration tests on Firebase Test Lab:
+#   # Build the Android test APK
+#   pushd android
+#   flutter build apk --debug
+#   ./gradlew app:assembleAndroidTest
+#   ./gradlew app:assembleDebug -Ptarget=integration_test/app_test.dart
+#   popd
+#
+#   # Run on Firebase Test Lab
+#   gcloud firebase test android run \
+#     --type instrumentation \
+#     --app build/app/outputs/apk/debug/app-debug.apk \
+#     --test build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+#     --timeout 5m

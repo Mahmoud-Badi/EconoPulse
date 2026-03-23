@@ -1,0 +1,242 @@
+# Status Color System
+
+A standardized 8-family color system for representing business entity states
+across the entire application. Every status in every service maps to exactly
+one family.
+
+---
+
+## Template Variables
+
+- `{{PROJECT_NAME}}` -- Name of the project using this system
+- `{{STATUS_MAPPING_TABLE}}` -- Project-specific status-to-family mapping (see Section 3)
+
+---
+
+## 1. The 8 Status Families
+
+Each family provides 4 CSS custom properties:
+
+| Token suffix | Purpose          | Example use                     |
+|--------------|------------------|---------------------------------|
+| `-bg`        | Background fill  | Badge background, row highlight |
+| `-text`      | Text / icon      | Label text, icon fill           |
+| `-border`    | Border stroke    | Badge border, card outline      |
+| `-dot`       | Indicator dot    | DotLabel circle, timeline node  |
+
+### Family Definitions
+
+| Family        | CSS prefix              | Hue     | Semantic meaning                          |
+|---------------|-------------------------|---------|-------------------------------------------|
+| **success**   | `--status-success-*`    | Green   | Completed, active, paid, delivered, approved |
+| **warning**   | `--status-warning-*`    | Amber   | Expiring, needs attention, pending review |
+| **danger**    | `--status-danger-*`     | Red     | Overdue, rejected, failed, critical, cancelled |
+| **info**      | `--status-info-*`       | Blue    | Informational, new, updated, notification |
+| **neutral**   | `--status-neutral-*`    | Gray    | Draft, inactive, archived, unknown        |
+| **in-progress** | `--status-in-progress-*` | Indigo | In transit, processing, building, loading |
+| **queued**    | `--status-queued-*`     | Purple  | Scheduled, pending, waiting, on hold      |
+| **special**   | `--status-special-*`    | Teal    | VIP, priority, featured, premium          |
+
+### Light Theme Values
+
+```
+Family        | bg      | text    | border  | dot
+--------------|---------|---------|---------|---------
+success       | #f0fdf4 | #15803d | #bbf7d0 | #22c55e
+warning       | #fffbeb | #a16207 | #fde68a | #eab308
+danger        | #fef2f2 | #b91c1c | #fecaca | #ef4444
+info          | #eff6ff | #1d4ed8 | #bfdbfe | #3b82f6
+neutral       | gray100 | gray600 | gray200 | gray400
+in-progress   | #eef2ff | #4338ca | #c7d2fe | #6366f1
+queued        | #faf5ff | #7e22ce | #e9d5ff | #a855f7
+special       | #f0fdfa | #0f766e | #99f6e4 | #14b8a6
+```
+
+---
+
+## 2. DotLabel Badge Component Pattern
+
+The DotLabel is the primary component for displaying status. It renders a small
+colored dot next to a text label, all wrapped in a pill-shaped badge.
+
+### Structure
+
+```tsx
+interface DotLabelProps {
+  /** The status family — determines all colors */
+  family: 'success' | 'warning' | 'danger' | 'info' | 'neutral'
+         | 'in-progress' | 'queued' | 'special';
+  /** Display text */
+  label: string;
+  /** Optional size variant */
+  size?: 'sm' | 'md';
+}
+
+function DotLabel({ family, label, size = 'sm' }: DotLabelProps) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full font-medium border',
+        size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm',
+      )}
+      style={{
+        backgroundColor: `var(--status-${family}-bg)`,
+        color: `var(--status-${family}-text)`,
+        borderColor: `var(--status-${family}-border)`,
+      }}
+    >
+      <span
+        className="shrink-0 rounded-full w-1.5 h-1.5"
+        style={{ backgroundColor: `var(--status-${family}-dot)` }}
+      />
+      {label}
+    </span>
+  );
+}
+```
+
+### Usage Examples
+
+```tsx
+<DotLabel family="success" label="Active" />
+<DotLabel family="danger" label="Overdue" />
+<DotLabel family="in-progress" label="In Transit" />
+<DotLabel family="queued" label="Scheduled" />
+<DotLabel family="special" label="VIP" />
+```
+
+---
+
+## 3. Business Status Mapping
+
+Every status string in the application MUST map to one of the 8 families.
+This mapping is the single source of truth for status colors.
+
+<!-- IF {{STATUS_MAPPING_TABLE}} == "" -->
+### Template: Fill in your project's mappings
+
+| Business Status       | Family        | Service      |
+|-----------------------|---------------|--------------|
+| `active`              | success       |              |
+| `delivered`           | success       |              |
+| `paid`                | success       |              |
+| `approved`            | success       |              |
+| `pending_review`      | warning       |              |
+| `expiring_soon`       | warning       |              |
+| `overdue`             | danger        |              |
+| `rejected`            | danger        |              |
+| `cancelled`           | danger        |              |
+| `new`                 | info          |              |
+| `updated`             | info          |              |
+| `draft`               | neutral       |              |
+| `archived`            | neutral       |              |
+| `in_transit`          | in-progress   |              |
+| `processing`          | in-progress   |              |
+| `scheduled`           | queued        |              |
+| `on_hold`             | queued        |              |
+| `vip`                 | special       |              |
+| `priority`            | special       |              |
+<!-- ENDIF -->
+
+<!-- IF {{STATUS_MAPPING_TABLE}} != "" -->
+{{STATUS_MAPPING_TABLE}}
+<!-- ENDIF -->
+
+---
+
+## 4. Utility: Status Family Resolver
+
+A helper function that maps any business status string to a family:
+
+```typescript
+type StatusFamily =
+  | 'success' | 'warning' | 'danger' | 'info'
+  | 'neutral' | 'in-progress' | 'queued' | 'special';
+
+const STATUS_FAMILY_MAP: Record<string, StatusFamily> = {
+  // Success
+  active: 'success',
+  delivered: 'success',
+  completed: 'success',
+  paid: 'success',
+  approved: 'success',
+  verified: 'success',
+
+  // Warning
+  pending_review: 'warning',
+  expiring_soon: 'warning',
+  needs_attention: 'warning',
+  partial: 'warning',
+
+  // Danger
+  overdue: 'danger',
+  rejected: 'danger',
+  failed: 'danger',
+  cancelled: 'danger',
+  expired: 'danger',
+  critical: 'danger',
+
+  // Info
+  new: 'info',
+  updated: 'info',
+  notification: 'info',
+
+  // Neutral
+  draft: 'neutral',
+  inactive: 'neutral',
+  archived: 'neutral',
+  unknown: 'neutral',
+
+  // In-Progress
+  in_transit: 'in-progress',
+  processing: 'in-progress',
+  loading: 'in-progress',
+  building: 'in-progress',
+  dispatched: 'in-progress',
+
+  // Queued
+  scheduled: 'queued',
+  pending: 'queued',
+  waiting: 'queued',
+  on_hold: 'queued',
+  booked: 'queued',
+
+  // Special
+  vip: 'special',
+  priority: 'special',
+  featured: 'special',
+  premium: 'special',
+};
+
+export function getStatusFamily(status: string): StatusFamily {
+  return STATUS_FAMILY_MAP[status.toLowerCase().replace(/[\s-]/g, '_')] ?? 'neutral';
+}
+```
+
+---
+
+## 5. Accessibility Requirements
+
+- **Contrast ratios:** All `-text` colors on their `-bg` must meet WCAG AA (4.5:1 for
+  normal text, 3:1 for large text).
+- **Not color-alone:** Status must also be conveyed via text label (the DotLabel always
+  includes a text label alongside the dot).
+- **Dark mode:** All families have dark-mode variants defined in `semantic-tokens.css`
+  that maintain the same contrast ratios.
+
+---
+
+## 6. Extending the System
+
+To add a new status family:
+
+1. Add 4 CSS custom properties in `semantic-tokens.css` (both `:root` and `.dark`):
+   ```css
+   --status-{family}-bg: ...;
+   --status-{family}-text: ...;
+   --status-{family}-border: ...;
+   --status-{family}-dot: ...;
+   ```
+2. Add the family to the `StatusFamily` type union.
+3. Add business status mappings to `STATUS_FAMILY_MAP`.
+4. The DotLabel component works automatically (it uses the family name in `var()`).

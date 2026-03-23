@@ -1,0 +1,72 @@
+# {{PROJECT_NAME}} — Project Phases
+
+## Phase Overview
+
+| Phase | Name | Duration | Status |
+|---|---|---|---|
+| Phase 0 | Emergency Fixes & Foundation | {{PHASE_0_DURATION}} | {{PHASE_0_STATUS}} |
+| Phase 1 | Core Features | {{PHASE_1_DURATION}} | {{PHASE_1_STATUS}} |
+| Phase 2 | Advanced Features | {{PHASE_2_DURATION}} | {{PHASE_2_STATUS}} |
+
+---
+
+## Phase 0 — Emergency Fixes & Foundation
+**Duration:** {{PHASE_0_DURATION}} (typically 1-2 weeks)
+**Goal:** Stabilize the codebase, fix blockers, establish development workflow.
+
+### Scope
+- [ ] {{PHASE_0_TASK_1}}
+- [ ] {{PHASE_0_TASK_2}}
+- [ ] {{PHASE_0_TASK_3}}
+
+### Deliverables
+- {{PHASE_0_DELIVERABLE_1}}
+- {{PHASE_0_DELIVERABLE_2}}
+
+### Success Criteria
+- {{PHASE_0_CRITERIA_1}}
+- {{PHASE_0_CRITERIA_2}}
+
+---
+
+## Phase 1 — Core Features
+**Duration:** {{PHASE_1_DURATION}}
+**Goal:** Deliver the MVP feature set that users can work with end-to-end.
+
+### Scope
+- [ ] {{PHASE_1_TASK_1}}
+- [ ] {{PHASE_1_TASK_2}}
+- [ ] {{PHASE_1_TASK_3}}
+- [ ] {{PHASE_1_TASK_4}}
+
+### Deliverables
+- {{PHASE_1_DELIVERABLE_1}}
+- {{PHASE_1_DELIVERABLE_2}}
+- {{PHASE_1_DELIVERABLE_3}}
+
+### Success Criteria
+- {{PHASE_1_CRITERIA_1}}
+- {{PHASE_1_CRITERIA_2}}
+
+---
+
+## Phase 2 — Advanced Features
+**Duration:** {{PHASE_2_DURATION}}
+**Goal:** Add power-user features, integrations, and polish.
+
+### Scope
+- [ ] {{PHASE_2_TASK_1}}
+- [ ] {{PHASE_2_TASK_2}}
+- [ ] {{PHASE_2_TASK_3}}
+
+### Deliverables
+- {{PHASE_2_DELIVERABLE_1}}
+- {{PHASE_2_DELIVERABLE_2}}
+
+### Success Criteria
+- {{PHASE_2_CRITERIA_1}}
+- {{PHASE_2_CRITERIA_2}}
+
+---
+
+*Last updated: {{LAST_UPDATED}}*

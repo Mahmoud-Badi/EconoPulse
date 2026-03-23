@@ -1,5 +1,7 @@
 # EconoPulse
 
+[![CI](https://github.com/Mahmoud-Badi/EconoPulse/actions/workflows/ci.yml/badge.svg)](https://github.com/Mahmoud-Badi/EconoPulse/actions/workflows/ci.yml)
+
 Bloomberg Terminal-style world economy dashboard.
 
 **Live:** [econopulse.live](http://econopulse.live/)

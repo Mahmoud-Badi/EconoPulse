@@ -1,0 +1,117 @@
+# /stakeholder-report — Generate Stakeholder Communications
+
+Generate audience-targeted stakeholder communications from current project state.
+
+## Configuration
+- **Project root:** `{{PROJECT_ROOT}}`
+- **Project name:** `{{PROJECT_NAME}}`
+- **Comms output dir:** `dev_docs/comms/`
+- **Kit templates:** `31-stakeholder-communications/`
+- **Status file:** `dev_docs/STATUS.md`
+
+## Arguments
+- `--audience [exec|investor|client|team|all]` — Target audience (default: all)
+- `--phase [discovery|architecture|sprint-planning|active-development|testing-qa|pre-launch|post-launch|auto]` — Phase to generate (default: auto-detect)
+- `--miro` — Generate only Miro export files
+- `--full` — Generate everything for all completed phases
+- `--no-diff` — Skip "what changed since last update" sections
+
+## Steps
+
+### Step 1 — Detect Current Phase
+
+Read the STATE BLOCK from `ORCHESTRATOR.md` or `dev_docs/.orchestrator-state.json`:
+- Extract `CURRENT_STEP` and `COMPLETED` array
+- Map to communication phase:
+  - Steps 0-1 → discovery
+  - Steps 1.7-2 → discovery
+  - Steps 3-7 → architecture
+  - Steps 8-9 → sprint-planning
+  - Steps 10-18.5 → active-development
+  - QA context → testing-qa
+  - Pre-launch context → pre-launch
+  - Post-deploy context → post-launch
+
+If `--phase` argument provided, use that instead of auto-detection.
+If `--full` flag, iterate through ALL completed phases.
+
+### Step 2 — Read Project Data
+
+Read these files to populate templates with real data:
+
+```
+dev_docs/STATUS.md                     → task counts, sprint progress
+dev_docs/specs/project-overview.md     → project description, personas
+dev_docs/specs/project-phases.md       → phase timeline, milestones
+dev_docs/specs/services/*.md           → service details
+dev_docs/specs/screens/*.md            → screen details
+dev_docs/completeness/*.md             → coverage matrices
+dev_docs/sprints/*.md                  → sprint plans, velocity
+dev_docs/comms/communication-plan.md   → stakeholder registry
+dev_docs/comms/audience-matrix.md      → content mapping
+```
+
+### Step 3 — Run the Generator
+
+Read `31-stakeholder-communications/COMMS-GENERATOR.md` and execute it with:
+- `{{AUDIENCE}}` = argument value or `all`
+- `{{PHASE}}` = detected or specified phase
+- `{{INCLUDE_MIRO}}` = `true` (always, unless `--miro` flag makes it the ONLY output)
+- `{{INCLUDE_DIAGRAMS}}` = `true` (unless `--miro` flag)
+- `{{DIFF_MODE}}` = `true` (unless `--no-diff` flag)
+
+### Step 4 — Apply "What Changed" Diffs
+
+If previous reports exist in `dev_docs/comms/` and `--no-diff` is NOT set:
+
+1. For each generated file, find its predecessor (same filename, previous date)
+2. Compare:
+   - Status indicators (GREEN/YELLOW/RED changes)
+   - Metric values (up/down/stable)
+   - Milestone completion (newly completed)
+   - Risk changes (new risks, resolved risks)
+3. Prepend a "What Changed Since Last Update" section to each file
+
+### Step 5 — Generate Mermaid Diagrams
+
+1. Read diagram templates from `31-stakeholder-communications/diagrams/`
+2. Replace `{{PLACEHOLDER}}` values with real project data:
+   - Service names from `dev_docs/specs/services/`
+   - Feature names from `dev_docs/specs/project-phases.md`
+   - Persona names from `dev_docs/specs/user-personas.md`
+   - Screen names from `dev_docs/specs/screens/`
+3. Write to `dev_docs/comms/diagrams/`
+
+### Step 6 — Output Summary
+
+Print what was generated:
+
+```
+STAKEHOLDER REPORT GENERATED
+==============================
+Phase: {detected phase}
+Audience: {target audience}
+Output: dev_docs/comms/
+
+Files generated:
+  Phase reports:  {N} files → dev_docs/comms/{phase}/
+  Miro exports:   {M} files → dev_docs/comms/miro/
+  Diagrams:       {D} files → dev_docs/comms/diagrams/
+
+Changes detected since last report:
+  ✓ {X} milestones completed
+  ⚠ {Y} status changes
+  ✗ {Z} new risks
+
+Next suggested update: {date based on cadence from communication plan}
+```
+
+### Step 7 — Remind About Cadence
+
+Check `dev_docs/comms/communication-plan.md` for the next scheduled update.
+If the current report is overdue or due soon, note it:
+
+```
+REMINDER: Weekly stakeholder update due {date}.
+Run /stakeholder-report --audience exec to generate.
+```

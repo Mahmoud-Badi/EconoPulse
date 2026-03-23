@@ -1,0 +1,92 @@
+# Ultra TMS — Task Status Dashboard
+# ============================================================
+# EXAMPLE FILE — This is the real STATUS.md from Ultra TMS (first 100 lines).
+# Your project's STATUS.md will be generated from the template
+# in 03-documentation/execution-layer/STATUS.md.template
+# ============================================================
+
+> **Last Updated:** February 17, 2026
+> **Current Phase:** Phase 6 — Financial + Go-Live (Weeks 11-12)
+> **Overall Health:** B- (7.2/10) → targeting B+ (8/10) by Week 12
+
+---
+
+## Sprint Calendar
+
+| Phase | Weeks | Focus | Tasks | Est. Hours |
+|-------|-------|-------|-------|------------|
+| **0** | **1** | Emergency Fixes | BUG-001→010 | 28-36h |
+| **1** | **2** | Design Foundation | COMP-001→008 | 24-32h |
+| **2** | **3-4** | Patterns + Carrier | PATT-001→003, CARR-001→003 | 28-38h |
+| **3** | **5-6** | TMS Viewing + Sales | TMS-001→004, SALES-001→003 | 46-52h |
+| **4** | **7-8** | TMS Forms + Operations | TMS-005→012 | 98-118h |
+| **5** | **9-10** | Testing + Tracking | TMS-013→014, TEST-001 | 48-61h |
+| **6** | **11-12** | Financial + Go-Live | ACC-001→006, COM-001→006 | 98-134h |
+
+**Total: ~390-460 hours over 12 weeks (2 developers x 15h/week = 360h capacity)**
+
+---
+
+## Phase 0 — Emergency Fixes (Week 1) ✅ COMPLETE
+
+| Task | Title | Effort | Status | Assigned |
+|------|-------|--------|--------|----------|
+| BUG-001 | Carrier detail page 404 | L | ✅ Done | Claude |
+| BUG-002 | Load history detail 404 | L | ✅ Done | Claude |
+| BUG-003 | Sidebar 404 links (x5) | S | ✅ Done | Claude |
+| BUG-004 | JWT & roles in console | S | ✅ Done | Claude |
+| BUG-005 | localStorage token security | M | ✅ Done | Claude |
+| BUG-006 | window.confirm() dialogs (x7) | M | ✅ Done | Claude |
+| BUG-007 | Search debounce (x3) | S | ✅ Done | Claude |
+| BUG-008 | Dashboard hardcoded data | M | ✅ Done | Claude |
+| BUG-009 | CRM delete buttons | S | ✅ Done | Claude |
+| BUG-010 | CRM missing features | M | ✅ Done | Claude |
+
+## Phase 1 — Design Foundation (Week 2) ✅ COMPLETE
+
+| Task | Title | Effort | Status | Assigned |
+|------|-------|--------|--------|----------|
+| COMP-001 | Design tokens in globals.css | M | ✅ Done | Claude |
+| COMP-002 | StatusBadge (8-family) | S | ✅ Done | Claude |
+| COMP-003 | KPICard | S | ✅ Done | Claude |
+| COMP-004 | FilterBar (search+filters+date) | M | ✅ Done | Claude |
+| COMP-005 | DataGrid (sort+paginate) | L | ✅ Done | Claude |
+| COMP-006 | ConfirmDialog upgrade | S | ✅ Done | Claude |
+| COMP-007 | Loading skeletons (list, detail, form) | M | ✅ Done | Claude |
+| COMP-008 | shadcn/ui installs | S | ✅ Done | Claude |
+
+## Phase 2 — Patterns + Carrier (Weeks 3-4)
+
+| Task | Title | Effort | Status | Assigned |
+|------|-------|--------|--------|----------|
+| PATT-001 | List page pattern | M | ✅ Done | Claude |
+| PATT-002 | Detail page pattern | M | ✅ Done | Claude |
+| PATT-003 | Form page pattern | M | ✅ Done | Claude |
+| CARR-001 | Refactor carrier list | L | ✅ Done | Codex |
+| CARR-002 | Carrier detail upgrade | L | ✅ Done | Codex |
+| CARR-003 | Carrier module tests | M | ✅ Done | Claude |
+| COMP-009 | Date range picker | S | ✅ Done | Claude |
+| COMP-010 | Stop list component | M | ✅ Done | Claude |
+
+## Phase 3 — TMS Viewing + Sales (Weeks 5-6) — IN PROGRESS
+
+| Task | Title | Effort | Status | Assigned |
+|------|-------|--------|--------|----------|
+| TMS-001 | Orders list page | L | ✅ Done | Codex |
+| TMS-002 | Order detail page | XL | ✅ Done | Claude |
+| TMS-003 | Loads list page | L | ✅ Done | Codex |
+| TMS-004 | Load detail page | XL | ✅ Done | Claude |
+| SALES-001 | Quotes list page | L | ✅ Done | Claude |
+| SALES-002 | Quote detail page | L | ✅ Done | Codex |
+| SALES-003 | Quote form | XL | ✅ Done | Claude |
+| TMS-015 | Public tracking page | M | Ready | -- |
+| DOC-001 | Document upload system | L | Ready | -- |
+
+---
+
+## Task Claiming Protocol
+
+1. Pick an unclaimed task (Status = Ready, no Assigned)
+2. Set Assigned = your name, Status = In Progress
+3. After completion: Status = Done, add date
+4. If blocked: Status = Blocked, add reason

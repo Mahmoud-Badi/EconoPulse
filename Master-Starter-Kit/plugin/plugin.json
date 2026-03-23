@@ -1,0 +1,50 @@
+{
+  "name": "master-starter-kit",
+  "version": "1.0.0",
+  "description": "Battle-tested project planning, quality, audit, and execution infrastructure. Provides project bootstrapping, per-service tribunals, quality gates, security frameworks, performance budgets, and session management — all proven on a 39-service production platform.",
+  "commands": [
+    "commands/bootstrap.md",
+    "commands/resume.md",
+    "commands/add-service.md",
+    "commands/health-check.md",
+    "commands/export-tasks.md",
+    "commands/audit-module.md",
+    "commands/verify-hub.md",
+    "commands/generate-hub.md",
+    "commands/generate-sprint.md",
+    "commands/generate-task.md",
+    "commands/security-scan.md",
+    "commands/performance-check.md",
+    "commands/plan-changed.md"
+  ],
+  "agents": [
+    "agents/project-bootstrapper.md",
+    "agents/per-service-auditor.md",
+    "agents/hub-corrector.md",
+    "agents/anti-pattern-scanner.md"
+  ],
+  "skills": [
+    "skills/session-kickoff.md",
+    "skills/session-end.md",
+    "skills/hub-generator.md",
+    "skills/sprint-planner.md",
+    "skills/tribunal-runner.md",
+    "skills/anti-pattern-check.md",
+    "skills/quality-gate.md",
+    "skills/gsd-autopilot.md",
+    "skills/kit-autopilot.md",
+    "skills/kit-sync.md",
+    "skills/verify-context.md",
+    "../tools/skills/website-builder/SKILL.md"
+  ],
+  "hooks": [
+    "hooks/pre-commit-quality.md",
+    "hooks/session-start-context.md",
+    "hooks/spec-drift-check.md",
+    "hooks/plan-change-detector.md",
+    "hooks/post-task-protocol.md",
+    "hooks/commit-state-check.md",
+    "hooks/context-anchor.md",
+    "hooks/arch-anchor-reminder.md"
+  ]
+}

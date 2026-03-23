@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    /* NestJS Specific */
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+
+    /* Emit */
+    "outDir": "./dist",
+    "declaration": true,
+    "removeComments": true,
+    "incremental": true,
+
+    /* Modules */
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "target": "ES2022",
+
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/modules/*": ["./src/modules/*"],
+      "@/common/*": ["./src/common/*"],
+      "@/config/*": ["./src/config/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage"
+  ]
+}

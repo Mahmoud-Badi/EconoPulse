@@ -1,0 +1,134 @@
+# {{PROJECT_NAME}} -- Task Dashboard
+
+> **Owner:** {{PROJECT_OWNER}}
+> **Start Date:** {{START_DATE}}
+> **Target Launch:** {{TARGET_LAUNCH_DATE}}
+> **Developers:** {{DEVELOPER_COUNT}}
+
+---
+
+## Sprint Calendar
+
+| Sprint | Dates | Focus | Status |
+|--------|-------|-------|--------|
+| Sprint 1 | {{SPRINT_1_START}} -- {{SPRINT_1_END}} | Phase 0: Bug fixes & foundations | Not Started |
+| Sprint 2 | {{SPRINT_2_START}} -- {{SPRINT_2_END}} | Phase 0 wrap-up, Phase 1 start | Not Started |
+| Sprint 3 | {{SPRINT_3_START}} -- {{SPRINT_3_END}} | Phase 1: Core features | Not Started |
+| Sprint 4 | {{SPRINT_4_START}} -- {{SPRINT_4_END}} | Phase 1: Core features | Not Started |
+| Sprint 5 | {{SPRINT_5_START}} -- {{SPRINT_5_END}} | Phase 1 wrap-up, Phase 2 start | Not Started |
+| Sprint 6 | {{SPRINT_6_START}} -- {{SPRINT_6_END}} | Phase 2: Advanced features | Not Started |
+
+> Sprints are 2 weeks. Adjust dates and add rows as needed.
+
+---
+
+## Current Sprint
+
+**Sprint:** 1
+**Goal:** {{SPRINT_1_GOAL}}
+**Velocity target:** {{VELOCITY_TARGET}} points
+
+### In Progress
+
+| Task ID | Title | Assigned | Started |
+|---------|-------|----------|---------|
+| _none_ | | | |
+
+### Completed This Sprint
+
+| Task ID | Title | Assigned | Completed |
+|---------|-------|----------|-----------|
+| _none_ | | | |
+
+---
+
+## Milestone Checkpoints
+
+| Milestone | Target Date | Criteria | Status |
+|-----------|-------------|----------|--------|
+| M1: Foundations Complete | {{M1_DATE}} | Phase 0 tasks done, CI green, design tokens live | Pending |
+| M2: Core MVP | {{M2_DATE}} | Phase 1 tasks done, all core screens functional | Pending |
+| M3: Feature Complete | {{M3_DATE}} | Phase 2 tasks done, all services wired | Pending |
+| M4: Release Candidate | {{M4_DATE}} | E2E passing, performance targets met | Pending |
+
+---
+
+## Task Claiming Protocol
+
+1. `git pull origin {{DEFAULT_BRANCH}}` -- get latest STATUS.md
+2. Find an **unclaimed** task matching your skillset (Status = "Ready")
+3. Set **Assigned** to your name, **Status** to "In Progress", **Updated** to today
+4. `git commit -m "claim: TASK-XXX"` and push immediately
+5. If two developers claim the same task, the first commit wins
+
+---
+
+## Phase 0 -- Bug Fixes & Foundations
+
+> Fix broken flows, unblock CI, establish patterns.
+
+| ID | Title | Effort | Status | Assigned | Updated | Dependencies |
+|----|-------|--------|--------|----------|---------|--------------|
+| {{PHASE0_PREFIX}}-001 | {{PHASE0_TASK_1}} | S | Ready | -- | {{TODAY}} | -- |
+| {{PHASE0_PREFIX}}-002 | {{PHASE0_TASK_2}} | M | Ready | -- | {{TODAY}} | -- |
+<!-- Add Phase 0 tasks here -->
+
+**Phase 0 Progress:** 0 / {{PHASE0_TOTAL}} tasks complete
+
+---
+
+## Phase 1 -- Core Features
+
+> Build the primary screens and service integrations.
+
+| ID | Title | Effort | Status | Assigned | Updated | Dependencies |
+|----|-------|--------|--------|----------|---------|--------------|
+| {{PHASE1_PREFIX}}-001 | {{PHASE1_TASK_1}} | M | Blocked | -- | {{TODAY}} | Phase 0 |
+| {{PHASE1_PREFIX}}-002 | {{PHASE1_TASK_2}} | L | Blocked | -- | {{TODAY}} | Phase 0 |
+<!-- Add Phase 1 tasks here -->
+
+**Phase 1 Progress:** 0 / {{PHASE1_TOTAL}} tasks complete
+
+---
+
+## Phase 2 -- Advanced Features
+
+> Polish, optimization, secondary screens, integrations.
+
+| ID | Title | Effort | Status | Assigned | Updated | Dependencies |
+|----|-------|--------|--------|----------|---------|--------------|
+| {{PHASE2_PREFIX}}-001 | {{PHASE2_TASK_1}} | M | Blocked | -- | {{TODAY}} | Phase 1 |
+| {{PHASE2_PREFIX}}-002 | {{PHASE2_TASK_2}} | L | Blocked | -- | {{TODAY}} | Phase 1 |
+<!-- Add Phase 2 tasks here -->
+
+**Phase 2 Progress:** 0 / {{PHASE2_TOTAL}} tasks complete
+
+---
+
+## Effort Key
+
+| Code | Meaning | Hours |
+|------|---------|-------|
+| S | Small | 1-2h |
+| M | Medium | 3-5h |
+| L | Large | 6-10h |
+| XL | Extra Large | 10-20h |
+
+## Status Key
+
+| Status | Meaning |
+|--------|---------|
+| Ready | Unblocked, available to claim |
+| In Progress | Actively being worked on |
+| In Review | PR submitted, awaiting review |
+| Blocked | Waiting on a dependency |
+| Done | Merged to {{DEFAULT_BRANCH}} |
+
+---
+
+## Revision Log
+
+| Date | Author | Change |
+|------|--------|--------|
+| {{TODAY}} | {{PROJECT_OWNER}} | Initial STATUS.md created |
+<!-- Append revisions here -->

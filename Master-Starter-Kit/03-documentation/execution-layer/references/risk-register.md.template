@@ -1,0 +1,59 @@
+# Risk Register -- {{PROJECT_NAME}}
+
+> Track and mitigate risks before they become blockers.
+> Review this register at the start of each sprint.
+
+---
+
+## Risk Matrix
+
+| Probability / Impact | Low Impact | Medium Impact | High Impact |
+|----------------------|------------|---------------|-------------|
+| **High Probability** | Monitor | Mitigate | Act Now |
+| **Medium Probability** | Accept | Monitor | Mitigate |
+| **Low Probability** | Accept | Accept | Monitor |
+
+---
+
+## Technical Risks
+
+| ID | Risk | Probability | Impact | Mitigation | Owner | Status |
+|----|------|-------------|--------|------------|-------|--------|
+| T-001 | [e.g., API breaking changes from backend updates] | Medium | High | [Pin API versions, contract tests] | -- | Open |
+| T-002 | [e.g., Database migration failures in production] | Low | High | [Test migrations on staging, rollback scripts] | -- | Open |
+
+---
+
+## Schedule Risks
+
+| ID | Risk | Probability | Impact | Mitigation | Owner | Status |
+|----|------|-------------|--------|------------|-------|--------|
+| S-001 | [e.g., Scope creep from stakeholder requests] | High | Medium | [Strict MVP scope, defer to Phase 2] | -- | Open |
+| S-002 | [e.g., Key developer unavailable for 1+ weeks] | Medium | High | [Cross-train on critical paths, document everything] | -- | Open |
+
+---
+
+## Resource Risks
+
+| ID | Risk | Probability | Impact | Mitigation | Owner | Status |
+|----|------|-------------|--------|------------|-------|--------|
+| R-001 | [e.g., AI context limits slow complex tasks] | Medium | Medium | [6-file rule, task decomposition] | -- | Open |
+
+---
+
+## External Risks
+
+| ID | Risk | Probability | Impact | Mitigation | Owner | Status |
+|----|------|-------------|--------|------------|-------|--------|
+| E-001 | [e.g., Third-party API rate limits or downtime] | Low | Medium | [Caching, fallback data, retry logic] | -- | Open |
+
+---
+
+## Status Key
+
+| Status | Meaning |
+|--------|---------|
+| Open | Risk identified, mitigation planned |
+| Mitigating | Actively working on mitigation |
+| Resolved | Risk eliminated or no longer applicable |
+| Occurred | Risk materialized, handling consequences |

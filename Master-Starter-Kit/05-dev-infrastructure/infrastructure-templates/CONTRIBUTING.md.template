@@ -1,0 +1,75 @@
+# Contributing to {{PROJECT_NAME}}
+
+Thank you for your interest in contributing! This document provides guidelines and instructions for contributing.
+
+## Getting Started
+
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/{{PROJECT_SLUG}}.git`
+3. Install dependencies: `{{INSTALL_CMD}}`
+4. Create a branch: `git checkout -b feature/your-feature-name`
+
+## Development Setup
+
+```bash
+# Install dependencies
+{{INSTALL_CMD}}
+
+# Start development server
+{{DEV_CMD}}
+
+# Run tests
+{{TEST_CMD}}
+
+# Run linting
+{{LINT_CMD}}
+```
+
+## Making Changes
+
+### Branch Naming
+
+- `feature/` — New features
+- `fix/` — Bug fixes
+- `refactor/` — Code improvements (no behavior change)
+- `docs/` — Documentation only
+- `test/` — Adding or improving tests
+
+### Commit Messages
+
+Follow conventional commits:
+
+```
+type(scope): description
+
+feat(auth): add password reset flow
+fix(api): handle null response from payment provider
+docs(readme): update installation instructions
+```
+
+### Code Standards
+
+- Run `{{LINT_CMD}}` before committing
+- Run `{{TEST_CMD}}` and ensure all tests pass
+- Add tests for new features
+- Update documentation for API changes
+
+## Pull Request Process
+
+1. Update your branch with the latest `main`
+2. Ensure all tests pass and linting is clean
+3. Write a clear PR description explaining what and why
+4. Link any related issues
+5. Request review from a maintainer
+
+## Reporting Bugs
+
+Open an issue with:
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Environment (OS, browser, Node version)
+
+## Code of Conduct
+
+This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold it.

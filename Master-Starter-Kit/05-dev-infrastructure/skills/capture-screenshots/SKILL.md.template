@@ -1,0 +1,158 @@
+---
+name: capture-screenshots
+description: Captures screenshots for all pending placeholders in user documentation. Uses Playwright for web, simulator/emulator commands for mobile. Invoke with /capture-screenshots.
+---
+
+# Capture Screenshots
+
+Reads all pending screenshot placeholders across user documentation and captures them using available automation tools. Run this after the design phase is complete and the UI is ready.
+
+## Prerequisites
+
+Before running this skill, verify:
+
+- [ ] The dev server is running (`{{DEV_CMD}}`)
+- [ ] Seed data is loaded in the database
+- [ ] The UI/design is in its final state (not work-in-progress)
+- [ ] For web: Playwright MCP is available
+<!-- IF {{HAS_MOBILE}} == "true" -->
+- [ ] For iOS: Xcode and iOS Simulator are available
+- [ ] For Android: Android Studio and Emulator are available
+- [ ] The mobile app builds and runs without errors
+<!-- ENDIF -->
+
+## Workflow
+
+### Step 1: Read the Manifest
+
+Read `user_docs/screenshot-manifest.md`.
+
+Filter entries where `status` = "pending". Group by platform: `web`, `ios`, `android`, `store`.
+
+Report:
+```text
+Screenshot capture starting.
+Pending: {X} web, {Y} iOS, {Z} Android, {W} store
+```
+
+### Step 2: Capture Web Screenshots (Playwright)
+
+Check if Playwright MCP tools are available (`browser_navigate`, `browser_take_screenshot`).
+
+**If Playwright is available:**
+
+1. Navigate to the login page and authenticate with seed user credentials
+2. For each pending web screenshot:
+   a. `browser_navigate` to the entry's URL
+   b. Execute any setup steps (apply filters, click buttons, etc.)
+   c. `browser_wait_for` the specified selector (timeout: 10 seconds)
+   d. `browser_resize` to the entry's viewport (default: 1280x720)
+   e. `browser_take_screenshot` → save to `user_docs/screenshots/web/{feature-slug}/{filename}.png`
+   f. Update the manifest entry: status = "captured", captured_date = today
+   g. In the doc file: remove the `<!-- SCREENSHOT_PENDING: ... -->` marker
+3. If a capture fails: log the error, mark as "failed" in manifest, continue to next
+
+**If Playwright is NOT available:**
+
+Generate a manual checklist at `user_docs/SCREENSHOT-CHECKLIST.md`:
+
+```markdown
+# Manual Screenshot Checklist
+
+## Web Screenshots ({X} pending)
+
+- [ ] **{feature-slug}/{filename}.png**
+  - URL: {url}
+  - Setup: {setup instructions}
+  - Viewport: {viewport}
+  - Save to: user_docs/screenshots/web/{feature-slug}/{filename}.png
+```
+
+<!-- IF {{HAS_MOBILE}} == "true" -->
+
+### Step 3: Capture iOS Screenshots
+
+Check if iOS Simulator is available: `xcrun simctl list devices available`
+
+**If available:**
+
+1. Ensure the simulator is booted: `xcrun simctl boot "iPhone 15"` (or the project's target device)
+2. Build and install the app if not already running
+3. For each pending iOS screenshot:
+   a. Navigate to the screen (via deep link if available, or describe manual navigation)
+   b. Set up the screen state
+   c. Wait for the screen to settle (2 second delay)
+   d. `xcrun simctl io booted screenshot user_docs/screenshots/ios/{feature-slug}/{filename}.png`
+   e. Update manifest: status = "captured"
+   f. Update doc file: remove SCREENSHOT_PENDING marker
+4. If failed: log error, mark as "failed", continue
+
+**If NOT available:** Add iOS entries to the manual checklist.
+
+### Step 4: Capture Android Screenshots
+
+Check if Android Emulator is available: `adb devices`
+
+**If available:**
+
+1. Ensure the emulator is running
+2. Build and install the app if not already running
+3. For each pending Android screenshot:
+   a. Navigate to the screen
+   b. Set up the screen state
+   c. Wait for the screen to settle (2 second delay)
+   d. `adb exec-out screencap -p > user_docs/screenshots/android/{feature-slug}/{filename}.png`
+   e. Update manifest: status = "captured"
+   f. Update doc file: remove SCREENSHOT_PENDING marker
+4. If failed: log error, mark as "failed", continue
+
+**If NOT available:** Add Android entries to the manual checklist.
+
+### Step 5: Capture App Store Screenshots
+
+For App Store / Play Store submission screenshots:
+
+1. Read the screenshot ordering from `user_docs/store-listing/app-store-listing.md`
+2. Capture at the required store sizes (see `18-user-documentation/mobile/app-store-screenshot-spec.md`):
+   - iOS: 1290x2796 (iPhone 6.7"), 1284x2778 (iPhone 6.5")
+   - Android: 1080x1920 (recommended)
+3. Save to `user_docs/screenshots/store/ios/` and `user_docs/screenshots/store/android/`
+4. Note: These are RAW captures. Text overlays and device frames are added separately by the designer.
+
+<!-- ENDIF -->
+
+### Step 6: Generate Report
+
+```text
+SCREENSHOT CAPTURE REPORT
+═══════════════════════════
+
+Web:     {X} captured, {Y} failed, {Z} skipped
+<!-- IF {{HAS_MOBILE}} == "true" -->
+iOS:     {A} captured, {B} failed, {C} skipped
+Android: {D} captured, {E} failed, {F} skipped
+Store:   {G} captured, {H} failed, {I} skipped
+<!-- ENDIF -->
+─────────────────────────
+Total:   {T} captured, {U} failed, {V} skipped
+
+Failed captures:
+- {filename}: {error reason}
+
+Manual checklist generated: {yes/no}
+  Location: user_docs/SCREENSHOT-CHECKLIST.md
+
+Doc files updated: {count} (SCREENSHOT_PENDING markers removed)
+```
+
+## Rules
+
+- **Never capture login screens with real credentials** — use seed user only
+- **Always use seed data** — no empty states unless documenting the empty state specifically
+- **Consistent seed data** across web and mobile captures
+- **Include status bar on mobile** — confirms the platform to the reader
+- **Exclude browser chrome on web** — app content only
+- **Capture light mode by default** — capture dark mode separately if supported
+- **Descriptive filenames** — `invoices-list-filtered.png` not `screenshot-1.png`
+- **Don't annotate** — clean screenshots only. Annotations are a separate design task.
+- **If a capture fails, don't block** — log it, move on, report at the end

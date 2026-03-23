@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "productName": "ProjectFlow",
+    "brandColor": "#6366f1",
+    "logo": "/assets/projectflow-logo.svg",
+    "description": "The modern project management platform for fast-moving teams."
+  },
+
+  "mode": "hybrid",
+  "platform": "web",
+
+  "entryGate": {
+    "enabled": true,
+    "heading": "See ProjectFlow in action",
+    "buttonText": "Launch Demo",
+    "fields": [
+      { "name": "name", "required": true },
+      { "name": "email", "required": true },
+      { "name": "company", "required": false },
+      { "name": "phone", "required": false },
+      { "name": "role", "required": false }
+    ],
+    "webhook": "https://hooks.example.com/leads/projectflow-demo",
+    "skipAllowed": true,
+    "gdprConsent": {
+      "required": true,
+      "label": "I agree to the Privacy Policy and consent to being contacted about ProjectFlow."
+    }
+  },
+
+  "steps": [
+    {
+      "id": "dashboard-overview",
+      "title": "Your Command Center",
+      "body": "The dashboard gives you a real-time snapshot of every project, upcoming deadlines, and team workload — all in one place.",
+      "target": "#app-dashboard",
+      "highlight": "spotlight",
+      "interaction": "view-only",
+      "media": null
+    },
+    {
+      "id": "create-project",
+      "title": "Create a Project in Seconds",
+      "body": "Click the + button, name your project, choose a template, and you are live. Try it now.",
+      "target": "#btn-new-project",
+      "highlight": "spotlight",
+      "interaction": "interactive",
+      "sandbox": {
+        "mock": true,
+        "resetOnExit": true
+      }
+    },
+    {
+      "id": "team-collaboration",
+      "title": "Collaborate with Your Team",
+      "body": "Mention teammates, leave comments, and share files — all inside the task view.",
+      "target": "#collab-panel",
+      "highlight": "hotspot",
+      "interaction": "view-only",
+      "media": null
+    },
+    {
+      "id": "task-management",
+      "title": "Drag-and-Drop Task Boards",
+      "body": "Organize work your way: Kanban boards, lists, or timeline view. Drag tasks to reprioritize instantly.",
+      "target": "#task-board",
+      "highlight": "spotlight",
+      "interaction": "interactive",
+      "cta": {
+        "id": "mid-cta-trial",
+        "type": "start-trial",
+        "title": "Like what you see?",
+        "description": "Start a free 14-day trial — no credit card required.",
+        "label": "Start Free Trial",
+        "url": "https://app.projectflow.io/signup?ref=demo"
+      }
+    },
+    {
+      "id": "analytics-reporting",
+      "title": "Built-in Analytics",
+      "body": "Track velocity, burndown, and team utilization with dashboards that update in real time.",
+      "target": "#analytics-view",
+      "highlight": "spotlight",
+      "interaction": "view-only",
+      "media": {
+        "type": "video",
+        "src": "/assets/demo/analytics-overview.mp4",
+        "poster": "/assets/demo/analytics-poster.jpg"
+      }
+    },
+    {
+      "id": "integrations",
+      "title": "Connect Your Stack",
+      "body": "Slack, GitHub, Figma, Google Drive — ProjectFlow integrates with the tools you already use.",
+      "target": "#integrations-grid",
+      "highlight": "spotlight",
+      "interaction": "view-only"
+    }
+  ],
+
+  "endScreen": {
+    "title": "You have seen the highlights!",
+    "summary": true,
+    "cta": {
+      "primary": {
+        "label": "Start Your Free Trial",
+        "url": "https://app.projectflow.io/signup?ref=demo-end"
+      },
+      "secondary": {
+        "label": "Book a Live Walkthrough",
+        "url": "https://projectflow.io/demo-call"
+      }
+    },
+    "socialProof": "<p>Trusted by 2,400+ teams including <strong>Stripe</strong>, <strong>Notion</strong>, and <strong>Linear</strong>.</p>"
+  },
+
+  "analytics": {
+    "provider": "gtag",
+    "trackingId": "G-XXXXXXXXXX",
+    "events": ["gate_submit", "step_view", "cta_click", "tour_complete"]
+  },
+
+  "mobile": {
+    "phoneFrame": true,
+    "orientation": "portrait",
+    "gestures": {
+      "swipeNext": true,
+      "pinchZoom": false
+    }
+  }
+}

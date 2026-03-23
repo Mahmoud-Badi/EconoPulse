@@ -1,0 +1,70 @@
+---
+name: kickoff
+description: Use when starting a new coding session on {{PROJECT_NAME}}, or when the user types /kickoff. Reads project status, finds the next task, and presents a ready-to-code briefing.
+---
+
+# Session Kickoff
+
+> **How this differs from /session-start:** The `/session-start` command is read-only — it reports status without action. This `/kickoff` skill goes further: it finds the next unblocked task, loads all context, presents a briefing, and immediately begins coding. Use `/kickoff` to start working; use `/session-start` to just check status.
+
+Automated session startup for the {{PROJECT_NAME}} project. Reads the task dashboard, finds the next available task, loads context, and presents a briefing so you can start coding immediately.
+
+## Workflow
+
+### Step-by-step
+
+1. **Read `dev_docs/STATUS.md`** — find the current phase and scan for tasks with status `NOT STARTED` and no assignment (or assigned to Claude Code)
+
+2. **Pick the next unblocked task** — first `NOT STARTED` task in the current phase. If ALL tasks in the current phase are done or in-progress, move to the next phase.
+
+3. **Check dependencies** — read the task file's "Dependencies" section. If it says "Blocked by: X", verify X is marked `DONE` in STATUS.md. If blocked, skip to next task.
+
+4. **Read the service hub file** — map the task prefix to its service:
+   <!-- TASK_PREFIX_MAP: This section is populated by the orchestrator during Step 2 -->
+   <!-- Example mappings (replace with actual project prefixes): -->
+   - `BUG-*` → read the relevant hub file (check task file for which service)
+   - Task prefix → service hub mapping is project-specific
+
+5. **Read the task file** — located at `dev_docs/tasks/{phase-folder}/{TASK-ID}-*.md`. Follow the Context Header if it lists additional files (max 6 files total).
+
+6. **Present the briefing** to the user:
+
+## Session Briefing
+
+**Task:** {TASK-ID} — {Title}
+**Phase:** {phase} | **Effort:** {effort estimate}
+**Service:** {service name} (hub: {hub file path})
+
+### What to do
+{Objective from task file — 1-2 sentences}
+
+### Acceptance Criteria
+{Bulleted list from task file}
+
+### Files to Touch
+{File Plan table from task file}
+
+### Dependencies
+{Status of blockers — all DONE or none}
+
+Starting now with {first action from task file}.
+
+**IMPORTANT: Never ask "Ready to start?" or wait for confirmation. After presenting the briefing, immediately begin coding the task.**
+
+## After Coding
+
+When the task is complete:
+
+1. Update STATUS.md — mark task `DONE` with today's date
+   (The doc enforcement hook will automatically remind you to document — follow its instructions)
+2. Generate user documentation with `/document-feature` — capture docs while context is fresh
+3. Run `{{TYPE_CHECK_CMD}} && {{LINT_CMD}}`
+4. Commit with `/commit`
+5. Log the session with `/log`
+
+## Rules
+
+- **Max 6 files** before coding (CLAUDE.md + hub + STATUS.md + task file + 2 from Context Header)
+- **One task per session** — don't try multiple tasks in one context window
+- **Don't rebuild backend** — it's ahead of frontend, wire up existing endpoints
+- **PROTECT LIST** — never touch pages listed in the protect list in CLAUDE.md

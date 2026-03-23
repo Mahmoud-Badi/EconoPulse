@@ -1,0 +1,139 @@
+# Design System -- {{PROJECT_NAME}}
+
+> **3-Layer Token Architecture:** Brand -> Semantic -> Tailwind/CSS
+> Change `--brand-hue` once to rebrand the entire application.
+
+---
+
+## Token Architecture Overview
+
+```
+Layer 1: Brand Tokens      (raw values -- hue, saturation, font family)
+    |
+    v
+Layer 2: Semantic Tokens    (purpose-based -- primary, danger, surface)
+    |
+    v
+Layer 3: Tailwind / CSS     (utility classes and CSS custom properties)
+```
+
+All tokens are defined in `{{GLOBALS_CSS_PATH}}`.
+
+---
+
+## Layer 1: Brand Tokens
+
+| Token | Value | Description |
+|-------|-------|-------------|
+| `--brand-hue` | {{BRAND_HUE}} | Primary hue (0-360). Change this to rebrand. |
+| `--brand-saturation` | {{BRAND_SATURATION}} | Primary saturation (e.g., 70%) |
+| `--brand-lightness` | {{BRAND_LIGHTNESS}} | Primary lightness (e.g., 45%) |
+| `--brand-font` | {{BRAND_FONT}} | Primary font family |
+| `--brand-font-mono` | {{BRAND_FONT_MONO}} | Monospace font family |
+| `--brand-radius` | {{BRAND_RADIUS}} | Default border radius |
+| `--brand-border-color` | {{BRAND_BORDER_COLOR}} | Default border color |
+
+---
+
+## Layer 2: Semantic Token Mappings
+
+### Surface & Background
+| Token | Maps To | Usage |
+|-------|---------|-------|
+| `--background` | white / brand-950 | Page background |
+| `--foreground` | brand-950 / white | Primary text |
+| `--card` | white / brand-900 | Card surfaces |
+| `--muted` | brand-100 / brand-800 | Muted backgrounds |
+| `--muted-foreground` | brand-500 / brand-400 | Secondary text |
+
+### Interactive
+| Token | Maps To | Usage |
+|-------|---------|-------|
+| `--primary` | brand color | Primary buttons, links |
+| `--primary-foreground` | white | Text on primary |
+| `--secondary` | brand-100 | Secondary buttons |
+| `--accent` | brand-100 | Hover states, highlights |
+| `--destructive` | red-500 | Delete actions, errors |
+| `--ring` | brand color | Focus rings |
+
+### Borders
+| Token | Maps To | Usage |
+|-------|---------|-------|
+| `--border` | brand-200 | Default borders |
+| `--input` | brand-200 | Input field borders |
+
+---
+
+## Status Color System
+
+Eight color families for consistent status representation across the app.
+
+| Family | CSS Variable Prefix | Hue | Use Cases |
+|--------|-------------------|-----|-----------|
+| Emerald (Success) | `--status-success` | 142 | Completed, active, delivered, paid |
+| Amber (Warning) | `--status-warning` | 38 | Pending review, expiring soon, at risk |
+| Red (Danger) | `--status-danger` | 0 | Failed, rejected, overdue, cancelled |
+| Blue (Info) | `--status-info` | 217 | New, informational, default state |
+| Gray (Neutral) | `--status-neutral` | 220 | Draft, inactive, archived, N/A |
+| Indigo (In Progress) | `--status-in-progress` | 239 | In transit, processing, in review |
+| Violet (Queued) | `--status-queued` | 263 | Scheduled, queued, waiting |
+| Cyan (Special) | `--status-special` | 186 | Highlighted, featured, priority |
+
+### Status Token Structure (per family)
+```css
+--status-{family}-bg:       /* Badge/chip background (light) */
+--status-{family}-text:     /* Badge/chip text color */
+--status-{family}-border:   /* Badge/chip border */
+--status-{family}-dot:      /* Dot indicator fill */
+```
+
+---
+
+## Typography Scale
+
+| Class / Token | Size | Weight | Usage |
+|---------------|------|--------|-------|
+| `text-xs` | 0.75rem (12px) | 400 | Labels, captions |
+| `text-sm` | 0.875rem (14px) | 400 | Body small, table cells |
+| `text-base` | 1rem (16px) | 400 | Body default |
+| `text-lg` | 1.125rem (18px) | 500 | Subheadings |
+| `text-xl` | 1.25rem (20px) | 600 | Section headers |
+| `text-2xl` | 1.5rem (24px) | 700 | Page titles |
+| `text-3xl` | 1.875rem (30px) | 700 | Dashboard hero numbers |
+
+---
+
+## Spacing Scale
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `space-1` | 0.25rem (4px) | Inline spacing, icon gaps |
+| `space-2` | 0.5rem (8px) | Tight padding, small gaps |
+| `space-3` | 0.75rem (12px) | Input padding, list gaps |
+| `space-4` | 1rem (16px) | Card padding, section gaps |
+| `space-6` | 1.5rem (24px) | Card body padding |
+| `space-8` | 2rem (32px) | Section spacing |
+| `space-12` | 3rem (48px) | Page-level spacing |
+| `space-16` | 4rem (64px) | Major section dividers |
+
+---
+
+## Component Token Patterns
+
+### Buttons
+```css
+.btn-primary   { bg: var(--primary);     color: var(--primary-foreground); }
+.btn-secondary { bg: var(--secondary);   color: var(--secondary-foreground); }
+.btn-danger    { bg: var(--destructive); color: white; }
+.btn-ghost     { bg: transparent;        color: var(--foreground); }
+```
+
+### Cards
+```css
+.card { bg: var(--card); border: 1px solid var(--border); radius: var(--brand-radius); }
+```
+
+### Inputs
+```css
+.input { border: 1px solid var(--input); radius: var(--brand-radius); ring: var(--ring); }
+```

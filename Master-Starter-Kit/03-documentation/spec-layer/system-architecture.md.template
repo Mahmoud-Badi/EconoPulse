@@ -1,0 +1,87 @@
+# {{PROJECT_NAME}} — System Architecture
+
+## High-Level Diagram
+
+```
+┌─────────────────────────────────────────────┐
+│                   Client                     │
+│  {{FRONTEND_FRAMEWORK}} ({{FRONTEND_PORT}}) │
+└──────────────────┬──────────────────────────┘
+                   │ HTTPS / WSS
+┌──────────────────▼──────────────────────────┐
+│              API Gateway / LB                │
+│          {{GATEWAY_TECHNOLOGY}}               │
+└──────────────────┬──────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────┐
+│              Backend API                     │
+│  {{BACKEND_FRAMEWORK}} ({{BACKEND_PORT}})    │
+├──────────────────────────────────────────────┤
+│  Auth │ Services │ WebSocket │ Jobs          │
+└───┬──────────┬───────────┬──────────────────┘
+    │          │           │
+┌───▼───┐  ┌──▼──┐  ┌────▼────┐
+│{{DATABASE}}│ │Cache│  │ Storage │
+│       │  │{{CACHE}}│ │{{STORAGE}}│
+└───────┘  └─────┘  └─────────┘
+```
+
+---
+
+## Layer Breakdown
+
+### Frontend Layer
+- **Framework:** {{FRONTEND_FRAMEWORK}} {{FRONTEND_VERSION}}
+- **State management:** {{STATE_MANAGEMENT}}
+- **Styling:** {{CSS_FRAMEWORK}}
+- **Component library:** {{COMPONENT_LIBRARY}}
+- **Build tool:** {{BUILD_TOOL}}
+
+### Backend Layer
+- **Framework:** {{BACKEND_FRAMEWORK}} {{BACKEND_VERSION}}
+- **API style:** {{API_STYLE}} <!-- REST / GraphQL / tRPC -->
+- **Auth:** {{AUTH_STRATEGY}}
+- **Real-time:** {{REALTIME_TECHNOLOGY}} <!-- WebSocket / SSE / none -->
+- **Job queue:** {{JOB_QUEUE}} <!-- Bull / Celery / Sidekiq / none -->
+
+### Database Layer
+- **Primary:** {{DATABASE}} {{DATABASE_VERSION}}
+- **ORM:** {{ORM}}
+- **Cache:** {{CACHE}} <!-- Redis / Memcached / none -->
+- **Search:** {{SEARCH_ENGINE}} <!-- Elasticsearch / Meilisearch / none -->
+
+### Infrastructure
+- **Hosting:** {{HOSTING_PROVIDER}}
+- **CI/CD:** {{CI_CD}}
+- **Monitoring:** {{MONITORING}}
+- **Logging:** {{LOGGING}}
+
+---
+
+## Deployment Topology
+- **Environments:** {{ENVIRONMENTS}} <!-- dev, staging, production -->
+- **Container orchestration:** {{CONTAINER_TECH}} <!-- Docker Compose / K8s / none -->
+- **CDN:** {{CDN}}
+
+---
+
+## Data Flow (Request Lifecycle)
+1. Client sends request to {{FRONTEND_FRAMEWORK}} app
+2. App calls backend API at `{{API_BASE_URL}}`
+3. Backend validates auth via {{AUTH_STRATEGY}}
+4. Service layer processes business logic
+5. ORM ({{ORM}}) queries {{DATABASE}}
+6. Response follows standard envelope format (see `standards/api-standards.md`)
+
+---
+
+## Security Model
+- **Authentication:** {{AUTH_METHOD}} <!-- JWT / Session / OAuth -->
+- **Authorization:** {{AUTHZ_METHOD}} <!-- RBAC / ABAC -->
+- **Roles:** {{ROLES_LIST}}
+- **Tenant isolation:** {{TENANT_STRATEGY}} <!-- Row-level / Schema-level / none -->
+- **Secrets management:** {{SECRETS_MANAGEMENT}}
+
+---
+
+*Last updated: {{LAST_UPDATED}}*

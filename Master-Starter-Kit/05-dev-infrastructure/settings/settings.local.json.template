@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)", "Read(*)", "Edit(*)", "Write(*)",
+      "Glob(*)", "Grep(*)", "WebFetch(*)", "WebSearch(*)",
+      "Task(*)", "TodoWrite(*)", "NotebookEdit(*)",
+      "Skill(*)", "AskUserQuestion(*)", "ToolSearch(*)"
+    ]
+  }
+}

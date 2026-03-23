@@ -1,0 +1,131 @@
+# /design-to-plan — Convert Design Spec to Implementation Plan
+
+Read a design spec and produce a sequenced, numbered implementation plan covering all layers.
+Screen: **$ARGUMENTS**
+
+## Configuration
+- **Project root:** `{{PROJECT_ROOT}}`
+- **Design specs:** `{{DESIGN_SPECS_PATH}}`
+- **Contract registry:** `{{CONTRACT_REGISTRY_PATH}}`
+- **Schema file:** `{{SCHEMA_FILE}}`
+- **Backend source:** `{{BACKEND_SRC}}`
+- **Frontend source:** `{{FRONTEND_SRC}}`
+- **Component library:** `{{COMPONENT_LIBRARY_PATH}}`
+
+## Steps
+
+### Step 1 — Read Design Spec
+Search `{{DESIGN_SPECS_PATH}}` for files matching "$ARGUMENTS".
+Read the full design spec. Extract:
+- **Data fields:** Every field name, type, and constraints
+- **Components:** UI elements needed (tables, forms, cards, modals, etc.)
+- **Status states:** Any status enums or workflow transitions
+- **Role matrix:** Who can view, edit, create, delete
+- **API endpoints:** Expected backend operations
+- **UX notes:** Interactions, validations, transitions, notifications
+
+If the spec is a stub or missing, report: "No actionable spec found. Write the spec first."
+
+### Step 2 — Read Contract Registry
+Search `{{CONTRACT_REGISTRY_PATH}}` for the screen entry.
+Extract current status columns: DB, API, FE, INT, VER.
+Note which layers are already marked as done.
+
+### Step 3 — Read Database Schema
+Read `{{SCHEMA_FILE}}` and identify:
+- Which models from the spec already exist
+- Which fields are missing from existing models
+- Which relations need to be added
+- Which enums need to be created
+
+### Step 4 — Analyze Gaps
+Compare the spec requirements against what exists. Categorize gaps:
+
+**Database gaps:**
+- Missing models
+- Missing fields on existing models
+- Missing relations
+- Missing enums or enum values
+- Missing indexes
+
+**Backend gaps:**
+- Missing controller endpoints
+- Missing service methods
+- Missing DTOs
+- Missing validation rules
+- Missing authorization checks
+
+**Frontend gaps:**
+- Missing page component
+- Missing sub-components
+- Missing hooks/data fetching
+- Missing form validation
+- Missing state handling (loading/error/empty/success)
+
+### Step 5 — Generate Implementation Plan
+
+```markdown
+# Implementation Plan: $ARGUMENTS
+Generated from design spec. Estimated effort: ~Xh
+
+## Phase 1 — Prerequisites
+[ ] 1.1 — [Any shared types, utilities, or dependencies needed first]
+[ ] 1.2 — [Any third-party packages to install]
+
+## Phase 2 — Database
+[ ] 2.1 — Create/update model: [model name] with fields: [field list]
+[ ] 2.2 — Add enum: [enum name] with values: [values]
+[ ] 2.3 — Add relation: [model A] -> [model B]
+[ ] 2.4 — Run migration and verify
+
+## Phase 3 — Backend
+[ ] 3.1 — Create DTOs: [create, update, query DTOs]
+[ ] 3.2 — Implement service: [list methods with descriptions]
+[ ] 3.3 — Implement controller: [list endpoints with HTTP methods]
+[ ] 3.4 — Add authorization: [guards, decorators, role checks]
+[ ] 3.5 — Register module
+[ ] 3.6 — Write backend tests
+
+## Phase 4 — Frontend
+[ ] 4.1 — Create types: [type definitions needed]
+[ ] 4.2 — Create hooks: [data fetching hooks]
+[ ] 4.3 — Create sub-components: [table columns, form fields, cards]
+[ ] 4.4 — Create page: [with all 4 states]
+[ ] 4.5 — Add navigation entry
+[ ] 4.6 — Add form validation
+
+## Phase 5 — Integration
+[ ] 5.1 — Wire frontend to real API endpoints
+[ ] 5.2 — Test full CRUD flow
+[ ] 5.3 — Test error handling (network errors, validation errors, 404s)
+[ ] 5.4 — Test role-based access
+[ ] 5.5 — Test edge cases from spec
+
+## Phase 6 — Documentation
+[ ] 6.1 — Update contract registry status columns
+[ ] 6.2 — Update work log
+[ ] 6.3 — Note any deviations from spec
+
+## Dependencies
+- [Step X depends on Step Y]
+- [External blockers if any]
+
+## Risks
+- [Potential issues, unknowns, or scope creep areas]
+```
+
+### Step 6 — Estimate and Prioritize
+For each task, provide a rough time estimate (15m, 30m, 1h, 2h).
+Total up the estimate.
+Highlight which tasks can be parallelized vs which are sequential.
+Mark any tasks that are already done based on existing code.
+
+## Output
+Present the full implementation plan. Ask: "Start with Phase 1, or adjust the plan?"
+
+## Notes
+- Skip phases where everything is already built (e.g., if DB and API exist, start at Phase 4)
+- Always include the integration phase — building layers in isolation leads to bugs
+- Mark already-completed items with [x] instead of [ ]
+- The plan should be specific enough that another developer could follow it
+- If the spec has ambiguities, list them as questions at the end

@@ -3,7 +3,7 @@ const router = express.Router();
 const NodeCache = require('node-cache');
 const coinmarketcapService = require('../services/coinmarketcapService');
 
-const cache = new NodeCache({ stdTTL: 60 });
+const cache = new NodeCache({ stdTTL: 300 });
 
 router.get('/listings', async (req, res) => {
   try {

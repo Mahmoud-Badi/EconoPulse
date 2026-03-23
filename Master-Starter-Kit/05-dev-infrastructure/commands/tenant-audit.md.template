@@ -1,0 +1,83 @@
+Scan the codebase for multi-tenant safety issues (missing tenantId/deletedAt filters).
+
+<!-- IF {{MULTI_TENANT}} == "false" -->
+**Note:** This project is not configured as multi-tenant. This audit may not be applicable.
+<!-- ENDIF -->
+
+## Instructions
+
+### Step 1: Scan Backend Services
+
+1. **Find all database query calls** in the backend source:
+<!-- IF {{ORM}} == "prisma" -->
+   Search for: `prisma.{model}.findMany`, `prisma.{model}.findFirst`, `prisma.{model}.findUnique`,
+   `prisma.{model}.update`, `prisma.{model}.updateMany`, `prisma.{model}.delete`,
+   `prisma.{model}.deleteMany`, `prisma.{model}.count`, `prisma.{model}.aggregate`
+<!-- ENDIF -->
+<!-- IF {{ORM}} == "typeorm" -->
+   Search for: `.find(`, `.findOne(`, `.findAndCount(`, `.createQueryBuilder(`
+<!-- ENDIF -->
+<!-- IF {{ORM}} == "django-orm" -->
+   Search for: `.objects.filter(`, `.objects.get(`, `.objects.all()`, `.objects.exclude(`
+<!-- ENDIF -->
+<!-- IF {{ORM}} == "activerecord" -->
+   Search for: `.where(`, `.find(`, `.find_by(`, `.all`, scope definitions
+<!-- ENDIF -->
+
+2. **For each query**, check:
+   - Does the `where` clause include `tenantId`? (REQUIRED for all queries)
+   - Does the `where` clause include soft-delete filter? (REQUIRED for all read queries)
+   - Exception: Health check endpoints, auth login/register for initial tenant lookup
+
+3. **Check for raw SQL queries** — flag ALL raw queries for manual review.
+
+### Step 2: Scan Controllers/Routes
+
+4. **Verify all endpoints extract tenant context**:
+   - Check for tenant decorator/middleware on all protected routes
+   - Search for hardcoded tenant IDs (UUID patterns in service files)
+
+5. **Check frontend** for tenantId leaks:
+   - Verify no frontend code passes tenantId as a parameter (should come from JWT/session)
+
+### Step 3: Generate Report
+
+6. **Output a structured report**:
+
+```
+## Multi-Tenant Safety Audit
+
+### Overall Risk: LOW / MEDIUM / HIGH / CRITICAL
+
+### Summary
+- Total queries scanned: [count]
+- Queries with tenant filter: [count] ([percentage]%)
+- Queries with soft-delete filter: [count] ([percentage]%)
+- Raw SQL queries found: [count]
+- Unsafe queries found: [count]
+
+### CRITICAL: Missing Tenant Filter
+| File | Line | Query | Model |
+|------|------|-------|-------|
+
+### WARNING: Missing Soft-Delete Filter
+| File | Line | Query | Model |
+|------|------|-------|-------|
+
+### INFO: Raw SQL (Manual Review Needed)
+| File | Line | Query Preview |
+|------|------|---------------|
+
+### Recommendations
+1. [Specific fix for each issue]
+```
+
+7. **For each unsafe query**, show before/after fix code.
+8. **Ask the user**: "Want me to auto-fix the [N] unsafe queries found?"
+
+### Important Notes
+
+- A single missing tenant filter means one tenant can see another's data
+- A missing soft-delete filter means users see records they "deleted"
+- Both are compliance risks (SOC 2, GDPR, etc.)
+- When in doubt, flag it — false positives are safer than false negatives

@@ -1,0 +1,67 @@
+# Documentation Map -- {{PROJECT_NAME}}
+
+> Two documentation layers work together: the **execution layer** (dev_docs)
+> for task management and the **spec layer** (dev_docs) for detailed specifications.
+
+---
+
+## Execution Layer (`{{EXECUTION_LAYER_PATH}}`)
+
+| Path | Purpose |
+|------|---------|
+| `STATUS.md` | Master task dashboard -- task status, sprint tracking |
+| `CHANGELOG.md` | Append-only work log -- session entries |
+| `README.md` | Navigation guide for this folder |
+| `foundations/session-kickoff.md` | Anti-context-rot playbook |
+| `foundations/design-system.md` | Design tokens and color system |
+| `foundations/quality-gates.md` | 4-gate quality assurance process |
+| `foundations/design-toolkit-guide.md` | UI building patterns without plugins |
+| `tasks/` | Individual task files (one per task) |
+| `components/_index.md` | Component catalog and quality ratings |
+| `services/_index.md` | Service index with status overview |
+| `services/{service}.md` | Per-service hub files |
+| `audit/` | Domain-level audit reports |
+| `references/` | Quickstart, risk register, patterns |
+
+---
+
+## Spec Layer (`{{SPEC_LAYER_PATH}}`)
+
+| Path | Purpose |
+|------|---------|
+| `{{SPEC_LAYER_PATH}}/services/` | Detailed service specifications |
+| `{{SPEC_LAYER_PATH}}/screens/` | Screen-level wireframes and field lists |
+| `{{SPEC_LAYER_PATH}}/api/` | API endpoint documentation |
+| `{{SPEC_LAYER_PATH}}/database/` | Schema documentation, ERD |
+| `{{SPEC_LAYER_PATH}}/weekly-reports/` | Weekly status reports |
+
+---
+
+## AI Configuration Files
+
+| File | Used By | Purpose |
+|------|---------|---------|
+| `{{AI_CONFIG_FILE}}` | Claude Code | Project rules, protect list |
+| `AGENTS.md` | All AI agents | Shared coordination rules |
+| `GEMINI.md` | Gemini | Gemini-specific instructions |
+| `.github/copilot-instructions.md` | GitHub Copilot | Copilot context |
+| `LEARNINGS.md` | All agents | Shared knowledge base |
+
+---
+
+## Infrastructure
+
+| File | Purpose |
+|------|---------|
+| `{{PACKAGE_JSON_PATH}}` | Dependencies and scripts |
+| `{{PRISMA_SCHEMA_PATH}}` | Database schema |
+| `{{TAILWIND_CONFIG_PATH}}` | Tailwind configuration |
+| `{{TSCONFIG_PATH}}` | TypeScript configuration |
+
+---
+
+## Service Hub Quick Reference
+
+| Service | Hub File | Spec File |
+|---------|----------|-----------|
+{{SERVICE_HUB_TABLE}}

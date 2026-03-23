@@ -1,0 +1,100 @@
+# Quality Gates -- {{PROJECT_NAME}}
+
+> Every change must pass through these 4 gates before reaching production.
+> Gates are cumulative -- Gate 2 includes everything from Gate 1.
+
+---
+
+## Gate 1: Pre-Commit
+
+**When:** Before every `git commit`
+**Enforced by:** Pre-commit hooks (husky/lint-staged or equivalent)
+
+| Check | Command | Must Pass |
+|-------|---------|-----------|
+| Lint | `{{LINT_CMD}}` | Zero errors (warnings OK during Phase 0) |
+| Type check | `{{TYPE_CHECK_CMD}}` | Zero errors |
+| No `console.log` | grep / lint rule | No console.log in committed code |
+| No `any` types | `{{TYPE_CHECK_CMD}}` / lint rule | No explicit `any` in new code |
+| Import order | lint rule / auto-fix | Sorted and grouped |
+| File naming | convention check | kebab-case for files, PascalCase for components |
+
+### Pre-Commit Bypass (Emergency Only)
+```bash
+git commit --no-verify -m "hotfix: [description]"
+```
+> Must be followed up with a clean commit within 24 hours.
+
+---
+
+## Gate 2: Pre-PR
+
+**When:** Before opening a pull request
+**Enforced by:** CI pipeline ({{CI_PROVIDER}})
+
+| Check | Command | Threshold |
+|-------|---------|-----------|
+| All Gate 1 checks | (re-run in CI) | Must pass |
+| Unit tests | `{{TEST_CMD}}` | 100% pass rate |
+| Build succeeds | `{{BUILD_CMD}}` | Zero errors |
+| Test coverage | `{{TEST_CMD}} --coverage` | >= {{COVERAGE_THRESHOLD}}% on changed files |
+| Bundle size | build output check | No increase > {{BUNDLE_SIZE_LIMIT}} |
+| No secrets | secret scanner | Zero findings |
+
+### PR Checklist (copy into PR description)
+```markdown
+- [ ] Gate 1 passes locally
+- [ ] Tests added/updated for changed code
+- [ ] Build succeeds with no warnings
+- [ ] Coverage meets threshold on changed files
+- [ ] No hardcoded URLs, secrets, or API keys
+- [ ] Tested manually in browser (if UI change)
+```
+
+---
+
+## Gate 3: Pre-Merge
+
+**When:** Before merging PR into {{DEFAULT_BRANCH}}
+**Enforced by:** Required reviewers + branch protection
+
+| Check | Who | Criteria |
+|-------|-----|----------|
+| Code review | At least {{REQUIRED_REVIEWERS}} reviewer(s) | Approved with no open threads |
+| API contracts | Reviewer | If endpoints changed, OpenAPI/Swagger updated |
+| Database schema | Reviewer | If schema changed, migration file included |
+| Service hub | Author | Service hub file updated if status changed |
+| STATUS.md | Author | Task status updated to "In Review" or "Done" |
+| CHANGELOG.md | Author | Session entry appended |
+
+### Merge Strategy
+- **Squash merge** for feature branches (clean history)
+- **Merge commit** for release branches (preserve branch context)
+
+---
+
+## Gate 4: Pre-Release
+
+**When:** Before deploying to staging/production
+**Enforced by:** Release checklist + manual sign-off
+
+| Check | Command / Process | Threshold |
+|-------|-------------------|-----------|
+| E2E tests | `{{E2E_CMD}}` | 100% pass on critical paths |
+| Accessibility | axe/Lighthouse audit | Zero critical violations |
+| Performance | Lighthouse CI | Performance >= {{PERF_SCORE_TARGET}} |
+| Mobile responsive | Manual check | Key screens render on 375px+ |
+| Cross-browser | Manual check | {{SUPPORTED_BROWSERS}} |
+| Data migration | If applicable | Rollback plan documented |
+| Rollback plan | Document | Documented and tested |
+
+### Release Sign-Off
+```
+- [ ] All Gate 1-3 checks pass
+- [ ] E2E suite green on staging
+- [ ] Accessibility audit clean
+- [ ] Performance targets met
+- [ ] Stakeholder demo completed
+- [ ] Rollback procedure verified
+- Approved by: _____________ Date: _____________
+```

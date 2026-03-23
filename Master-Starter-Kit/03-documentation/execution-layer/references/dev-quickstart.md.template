@@ -1,0 +1,100 @@
+# Developer Quickstart -- {{PROJECT_NAME}}
+
+> Get from zero to running in 10 minutes.
+
+---
+
+## Prerequisites
+
+| Tool | Version | Check Command |
+|------|---------|---------------|
+| Node.js | >= {{NODE_VERSION}} | `node --version` |
+| {{PKG_MANAGER}} | >= {{PKG_MANAGER_VERSION}} | `{{PKG_MANAGER}} --version` |
+| Docker | >= {{DOCKER_VERSION}} | `docker --version` |
+| Git | >= 2.30 | `git --version` |
+
+---
+
+## Setup Steps
+
+### 1. Clone the Repository
+```bash
+git clone {{REPO_URL}}
+cd {{REPO_DIRECTORY}}
+```
+
+### 2. Install Dependencies
+```bash
+{{PKG_MANAGER}} install
+```
+
+### 3. Start Infrastructure (Database, etc.)
+```bash
+docker compose up -d
+```
+
+### 4. Run Database Migrations
+```bash
+{{MIGRATE_CMD}}
+```
+
+### 5. Seed the Database (Optional)
+```bash
+{{SEED_CMD}}
+```
+
+### 6. Start Development Servers
+```bash
+{{DEV_CMD}}
+```
+
+---
+
+## Key URLs
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| Frontend | `http://localhost:{{FRONTEND_PORT}}` | {{FRONTEND_FRAMEWORK}} dev server |
+| Backend API | `http://localhost:{{BACKEND_PORT}}` | {{BACKEND_FRAMEWORK}} server |
+| API Docs | `http://localhost:{{BACKEND_PORT}}/api/docs` | Swagger/OpenAPI |
+| Database | `localhost:{{DB_PORT}}` | {{DB_TYPE}} |
+| Storybook | `http://localhost:{{STORYBOOK_PORT}}` | Component library (if configured) |
+
+---
+
+## Common Commands
+
+| Task | Command |
+|------|---------|
+| Dev servers | `{{DEV_CMD}}` |
+| Run all tests | `{{TEST_CMD}}` |
+| Run frontend tests | `{{FRONTEND_TEST_CMD}}` |
+| Run backend tests | `{{BACKEND_TEST_CMD}}` |
+| Lint | `{{LINT_CMD}}` |
+| Type check | `{{TYPE_CHECK_CMD}}` |
+| Build | `{{BUILD_CMD}}` |
+| Generate Prisma client | `{{PRISMA_GENERATE_CMD}}` |
+| Create migration | `{{MIGRATION_CREATE_CMD}}` |
+| Storybook | `{{STORYBOOK_CMD}}` |
+
+---
+
+## Troubleshooting FAQ
+
+**Q: Port already in use?**
+A: Kill the process: `lsof -i :{{FRONTEND_PORT}}` then `kill -9 <PID>`, or change the port in the config.
+
+**Q: Database connection refused?**
+A: Make sure Docker is running: `docker compose up -d`. Check the `.env` file has the correct `DATABASE_URL`.
+
+**Q: Prisma client out of date?**
+A: Run `{{PRISMA_GENERATE_CMD}}` after any schema changes.
+
+**Q: Type errors after pulling latest?**
+A: Run `{{PKG_MANAGER}} install` to pick up new dependencies, then `{{PRISMA_GENERATE_CMD}}`.
+
+**Q: Tests failing on a fresh clone?**
+A: Ensure the test database exists and migrations are applied: `{{MIGRATE_CMD}}`.
+
+**Q: Hot reload not working?**
+A: Check for file system watcher limits. On Linux: `echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p`.

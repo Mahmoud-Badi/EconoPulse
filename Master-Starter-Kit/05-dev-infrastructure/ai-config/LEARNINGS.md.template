@@ -1,0 +1,60 @@
+# {{PROJECT_NAME}} -- Shared Knowledge Base
+
+> **Cross-AI learning repository.** Any AI assistant that discovers a bug, pattern, gotcha, or useful technique should document it here. This file is read at the start of every session by every AI.
+
+---
+
+## Bugs & Fixes
+
+<!-- Format:
+### [Date] Bug Title
+- **Symptom:** What went wrong
+- **Root Cause:** Why it happened
+- **Fix:** How it was resolved
+- **Affected Files:** List of files
+-->
+
+---
+
+## Patterns & Conventions
+
+<!-- Format:
+### Pattern Name
+- **When to use:** Context for when this pattern applies
+- **Implementation:** Code snippet or description
+- **Example:** File path where this is used correctly
+-->
+
+---
+
+## Testing Gotchas
+
+<!-- Format:
+### Gotcha Title
+- **Problem:** What surprised you
+- **Solution:** How to handle it
+- **Affected:** Which test files or modules
+-->
+
+---
+
+## Performance
+
+<!-- Format:
+### Optimization Title
+- **Before:** What was slow and why
+- **After:** What was changed
+- **Impact:** Measured improvement
+-->
+
+---
+
+## Third-Party Integration Notes
+
+<!-- Format:
+### Service/Library Name
+- **Version:** Current version in use
+- **Quirks:** Unexpected behavior or undocumented features
+- **Workarounds:** How we handle the quirks
+- **Docs:** Link to relevant documentation
+-->

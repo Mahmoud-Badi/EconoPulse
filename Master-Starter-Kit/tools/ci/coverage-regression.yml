@@ -1,0 +1,195 @@
+# =============================================================================
+# coverage-regression.yml — Test Coverage Regression Guard
+#
+# Compares test coverage against a stored baseline. Fails if coverage drops
+# below baseline by more than 2%. Posts a coverage diff as a PR comment.
+#
+# Prerequisites:
+#   - A coverage baseline file at dev_docs/quality/coverage-baseline.json
+#     Format: { "line": 85.5, "branch": 72.3, "function": 90.1 }
+#   - Test runner configured to output lcov or json coverage reports
+# =============================================================================
+
+name: Coverage Regression Guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'app/**'
+      - 'tests/**'
+      - '**/*.test.*'
+      - '**/*.spec.*'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  coverage-check:
+    name: Coverage Regression Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts || yarn install --frozen-lockfile || pnpm install --frozen-lockfile
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        id: test
+        continue-on-error: true
+        run: |
+          # Try common test commands
+          if [[ -f "package.json" ]]; then
+            if grep -q '"test:coverage"' package.json; then
+              npm run test:coverage 2>&1 | tee /tmp/test-output.txt
+            elif grep -q '"coverage"' package.json; then
+              npm run coverage 2>&1 | tee /tmp/test-output.txt
+            elif grep -q '"test"' package.json; then
+              npm test -- --coverage 2>&1 | tee /tmp/test-output.txt
+            fi
+          fi
+
+      - name: Parse coverage and compare baseline
+        id: coverage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // --- Read baseline ---
+            const baselinePath = 'dev_docs/quality/coverage-baseline.json';
+            let baseline = { line: 0, branch: 0, function: 0 };
+            if (fs.existsSync(baselinePath)) {
+              baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+              console.log('Baseline loaded:', baseline);
+            } else {
+              console.log('No baseline found — will report current coverage only');
+            }
+
+            // --- Read current coverage ---
+            // Try multiple coverage report formats
+            let current = null;
+
+            // Try coverage-summary.json (Jest/Istanbul)
+            const summaryPaths = [
+              'coverage/coverage-summary.json',
+              'coverage/coverage-final.json',
+            ];
+            for (const sp of summaryPaths) {
+              if (fs.existsSync(sp)) {
+                const data = JSON.parse(fs.readFileSync(sp, 'utf8'));
+                if (data.total) {
+                  current = {
+                    line: data.total.lines?.pct ?? 0,
+                    branch: data.total.branches?.pct ?? 0,
+                    function: data.total.functions?.pct ?? 0,
+                  };
+                  break;
+                }
+              }
+            }
+
+            // Try lcov.info
+            if (!current && fs.existsSync('coverage/lcov.info')) {
+              const lcov = fs.readFileSync('coverage/lcov.info', 'utf8');
+              let linesHit = 0, linesTotal = 0;
+              let branchHit = 0, branchTotal = 0;
+              let fnHit = 0, fnTotal = 0;
+              for (const line of lcov.split('\n')) {
+                if (line.startsWith('LH:')) linesHit += parseInt(line.slice(3));
+                if (line.startsWith('LF:')) linesTotal += parseInt(line.slice(3));
+                if (line.startsWith('BRH:')) branchHit += parseInt(line.slice(4));
+                if (line.startsWith('BRF:')) branchTotal += parseInt(line.slice(4));
+                if (line.startsWith('FNH:')) fnHit += parseInt(line.slice(4));
+                if (line.startsWith('FNF:')) fnTotal += parseInt(line.slice(4));
+              }
+              current = {
+                line: linesTotal ? (linesHit / linesTotal * 100) : 0,
+                branch: branchTotal ? (branchHit / branchTotal * 100) : 0,
+                function: fnTotal ? (fnHit / fnTotal * 100) : 0,
+              };
+            }
+
+            if (!current) {
+              core.warning('Could not find coverage report. Ensure tests generate coverage output.');
+              core.setOutput('status', 'skip');
+              return;
+            }
+
+            // --- Compare ---
+            const threshold = 2; // Max allowed regression percentage
+            const diffs = {
+              line: (current.line - baseline.line).toFixed(1),
+              branch: (current.branch - baseline.branch).toFixed(1),
+              function: (current.function - baseline.function).toFixed(1),
+            };
+
+            const regressions = [];
+            if (parseFloat(diffs.line) < -threshold) regressions.push(`Line: ${diffs.line}%`);
+            if (parseFloat(diffs.branch) < -threshold) regressions.push(`Branch: ${diffs.branch}%`);
+            if (parseFloat(diffs.function) < -threshold) regressions.push(`Function: ${diffs.function}%`);
+
+            const icon = (d) => parseFloat(d) >= 0 ? '🟢' : (parseFloat(d) >= -threshold ? '🟡' : '🔴');
+
+            const body = [
+              `## ${regressions.length ? '🔴' : '🟢'} Coverage Report`,
+              '',
+              '| Metric | Baseline | Current | Diff |',
+              '|--------|----------|---------|------|',
+              `| Lines | ${baseline.line}% | ${current.line.toFixed(1)}% | ${icon(diffs.line)} ${diffs.line}% |`,
+              `| Branches | ${baseline.branch}% | ${current.branch.toFixed(1)}% | ${icon(diffs.branch)} ${diffs.branch}% |`,
+              `| Functions | ${baseline.function}% | ${current.function.toFixed(1)}% | ${icon(diffs.function)} ${diffs.function}% |`,
+              '',
+              regressions.length
+                ? `**Coverage regression detected (>${threshold}% drop):** ${regressions.join(', ')}`
+                : '**Coverage is within acceptable range.**',
+            ].join('\n');
+
+            // Post comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Coverage Report')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+            core.setOutput('status', regressions.length ? 'fail' : 'pass');
+            core.setOutput('regressions', regressions.join(', '));
+
+      - name: Fail on coverage regression
+        if: steps.coverage.outputs.status == 'fail'
+        run: |
+          echo "::error::Coverage regression detected: ${{ steps.coverage.outputs.regressions }}"
+          echo "Coverage dropped more than 2% below baseline. Update tests or adjust baseline."
+          exit 1

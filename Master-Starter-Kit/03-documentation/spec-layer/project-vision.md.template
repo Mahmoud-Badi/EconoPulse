@@ -1,0 +1,49 @@
+# {{PROJECT_NAME}} — Product Vision
+
+## Vision Statement
+{{VISION_STATEMENT}}
+
+---
+
+## Market Positioning
+- **Category:** {{PRODUCT_CATEGORY}}
+- **Differentiator:** {{KEY_DIFFERENTIATOR}}
+- **Positioning statement:** For {{TARGET_AUDIENCE}} who {{NEED}}, {{PROJECT_NAME}} is a {{CATEGORY}} that {{KEY_BENEFIT}}. Unlike {{COMPETITOR}}, we {{UNIQUE_VALUE}}.
+
+---
+
+## Competitive Advantages
+1. {{ADVANTAGE_1}}
+2. {{ADVANTAGE_2}}
+3. {{ADVANTAGE_3}}
+
+---
+
+## Roadmap Targets
+
+### 12-Month Targets (MVP + Growth)
+- [ ] {{TARGET_12M_1}}
+- [ ] {{TARGET_12M_2}}
+- [ ] {{TARGET_12M_3}}
+- [ ] {{TARGET_12M_4}}
+
+### 24-Month Targets (Scale)
+- [ ] {{TARGET_24M_1}}
+- [ ] {{TARGET_24M_2}}
+- [ ] {{TARGET_24M_3}}
+- [ ] {{TARGET_24M_4}}
+
+---
+
+## Success Metrics
+
+| Metric | MVP Target | 12-Month Target | 24-Month Target |
+|---|---|---|---|
+| {{METRIC_1}} | {{MVP_VAL_1}} | {{12M_VAL_1}} | {{24M_VAL_1}} |
+| {{METRIC_2}} | {{MVP_VAL_2}} | {{12M_VAL_2}} | {{24M_VAL_2}} |
+| {{METRIC_3}} | {{MVP_VAL_3}} | {{12M_VAL_3}} | {{24M_VAL_3}} |
+| {{METRIC_4}} | {{MVP_VAL_4}} | {{12M_VAL_4}} | {{24M_VAL_4}} |
+
+---
+
+*Last updated: {{LAST_UPDATED}}*

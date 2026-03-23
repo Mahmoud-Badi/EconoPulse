@@ -1,0 +1,86 @@
+# Session Kickoff Playbook
+
+> **Anti-context-rot protocol.** Follow this at the start of every coding session
+> to stay grounded in the codebase without blowing your context window.
+
+---
+
+## The 6-File Rule
+
+**Maximum 6 files loaded before you start coding.**
+
+Loading too many files causes context rot -- the AI loses track of earlier
+information as the window fills. Six files is the sweet spot: enough to
+understand the task, small enough to retain everything.
+
+---
+
+## File Loading Order
+
+Load these files in this exact order:
+
+| Priority | File | Why |
+|----------|------|-----|
+| 1 | `{{AI_CONFIG_FILE}}` | Project-wide rules, protect list, anti-patterns |
+| 2 | Service hub (`services/{service}.md`) | Current service context, endpoints, screens |
+| 3 | `STATUS.md` | Know what is in progress, what is blocked |
+| 4 | Task file (`tasks/{task-id}.md`) | Specific acceptance criteria and file plan |
+| 5 | Context file 1 (from task header) | Related source file or spec |
+| 6 | Context file 2 (from task header) | Related source file or spec |
+
+> If a task's Context Header lists more than 2 related files, pick the two
+> most relevant. You can always load more later if needed.
+
+---
+
+## Session Start Protocol
+
+```
+1. Read {{AI_CONFIG_FILE}}
+2. Read the service hub for today's work area
+3. Read STATUS.md -- identify your task(s)
+4. Read the task file -- understand acceptance criteria
+5. Load up to 2 context files from the task header
+6. Begin coding (you are now at 6 files)
+```
+
+### Before You Code, Verify:
+- [ ] You know which task ID you are working on
+- [ ] You have read the acceptance criteria
+- [ ] You know the file plan (which files to create/edit)
+- [ ] You checked dependencies -- nothing is blocking you
+- [ ] You are NOT touching anything on the **Protect List**
+
+---
+
+## Session End Protocol
+
+```
+1. Update STATUS.md -- mark tasks as Done / In Progress / Blocked
+2. Add a CHANGELOG.md entry (append-only, never edit old entries)
+3. Commit all changes with a descriptive message
+4. Note any blockers or follow-up items in the changelog entry
+```
+
+---
+
+## Context Window Tips
+
+| Tip | Rationale |
+|-----|-----------|
+| Prefer reading specific functions over entire files | Smaller reads = more room for reasoning |
+| Use grep/search before reading | Find the right file first, read second |
+| Summarize long files mentally before proceeding | Reduces re-reading later |
+| Avoid loading test files unless you are writing tests | Tests are large and context-heavy |
+| If you feel lost, re-read the task file | It is your north star for the session |
+| Close finished contexts by moving to the next task | Do not carry stale file contents forward |
+
+---
+
+## Protect List
+
+These files/routes must NOT be modified without explicit approval:
+
+{{PROTECT_LIST}}
+
+> If a task requires changes to a protected file, stop and flag it.

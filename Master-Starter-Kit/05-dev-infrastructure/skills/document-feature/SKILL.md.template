@@ -1,0 +1,143 @@
+---
+name: document-feature
+description: Use after completing any feature task. Generates user-facing documentation while context is fresh. Invoke with /document-feature.
+---
+
+# Document Feature
+
+Generates user-facing documentation for the feature you just built. Run this immediately after completing a feature task — while you still have full context of what was built, how it works, and what edge cases exist.
+
+**Critical:** This skill captures knowledge that will be lost after compacting or context reset. The text you write now is the foundation of the user's help experience. Do not skip or defer this step.
+
+## Workflow
+
+### Step 1: Gather Context
+
+Read these files (you should already have most of them from building the feature):
+
+1. The task file you just completed (from STATUS.md → current task)
+2. The feature spec (from task file's Context Header)
+3. The screen spec (from the screen catalog for this feature's screens)
+4. The code you just wrote (from task file's File Plan — the actual implementation)
+
+Determine the **platform scope**:
+- If the task touched files in `apps/web/` only → **web-only**
+- If the task touched files in `apps/mobile/` only → **mobile-only**
+- If both → **cross-platform**
+
+### Step 2: Generate/Update Feature Guide
+
+Read the template at `18-user-documentation/doc-types/feature-guide.template.md`.
+
+**If the guide doesn't exist yet** (`user_docs/guides/{feature-slug}.md`):
+- Create it from the template
+- Fill in ALL required sections (see `18-user-documentation/doc-quality-standards.md`)
+
+**If the guide already exists** (from a previous task on the same feature):
+- Update the relevant sections
+- Add new steps if the feature was extended
+- Update FAQ and troubleshooting entries
+
+**Required content:**
+- Feature name and 2-3 sentence description
+- At least one user role this feature is for
+- At least one prerequisite
+- Step-by-step instructions (numbered, with expected results after each step)
+- At least 1 screenshot placeholder per major screen/action
+- At least 3 FAQ entries
+- At least 1 troubleshooting entry
+
+<!-- IF {{HAS_MOBILE}} == "true" -->
+**If cross-platform:** Add "On Mobile" section with:
+- iOS-specific instructions
+- Android-specific instructions
+- Platform differences table
+- Mobile screenshot placeholders with platform tags (ios/android)
+
+**If mobile-only:** Create guide at `user_docs/guides/mobile/{feature-slug}.md`
+<!-- ENDIF -->
+
+### Step 3: Generate FAQ Entries
+
+Add FAQ entries to the appropriate category file in `user_docs/faq/`:
+
+- Minimum 3 FAQ entries per feature
+- Write questions as a user would ask them (not as a developer would phrase them)
+- Include both a short answer and a detailed answer with steps
+
+### Step 4: Generate Troubleshooting Entries
+
+For each error state you encountered or implemented during the build:
+
+1. Add an entry to `user_docs/troubleshooting/{category}.md`
+2. Include: symptom, possible causes, step-by-step solution, expected result
+3. Update the error-help mapping at `user_docs/in-app/error-help-mapping.json` (if new error codes were added)
+
+### Step 5: Append Changelog Entry
+
+Open `user_docs/changelog.md` and append a new entry under the current version:
+
+```markdown
+- **{Feature Name}** — {1-sentence description of what users can now do}. [Learn more](user_docs/guides/{feature-slug}.md)
+```
+
+### Step 6: Update In-App Help
+
+For each screen that was created or modified:
+
+1. Update `user_docs/in-app/{screen-slug}.json` with:
+   - Updated tooltips for new/changed form fields
+   - Updated contextual help sections
+   - Link to the feature guide
+
+<!-- IF {{HAS_MOBILE}} == "true" -->
+2. For mobile screens, update `user_docs/in-app/mobile/{screen-slug}-help.json`
+3. If this is a new mobile screen, create a coach mark tour: `user_docs/in-app/mobile/{screen-slug}-tour.json`
+4. If this feature involves permissions, document the permission request flow
+5. Update App Store "What's New" in `user_docs/store-listing/app-store-listing.md`
+<!-- ENDIF -->
+
+### Step 7: Insert Screenshot Placeholders
+
+For every major screen or action in the feature:
+
+```markdown
+![Screenshot: {description}](user_docs/screenshots/web/{feature-slug}/{filename}.png)
+<!-- SCREENSHOT_PENDING:
+  platform: web
+  url: {page URL}
+  setup: "{what state the page should be in}"
+  wait_for: "{CSS selector to wait for}"
+  viewport: 1280x720
+  filename: {feature-slug}-{descriptor}.png
+  description: {what the screenshot shows}
+-->
+```
+
+Add each placeholder to the screenshot manifest: `user_docs/screenshot-manifest.md`
+
+### Step 8: Update DOC-INDEX.md
+
+Update `user_docs/DOC-INDEX.md`:
+- Mark this feature's documentation status as "complete" (or "updated")
+- Update coverage counts
+- Update the last-modified date
+
+## Rules
+
+- **Write in user-facing language.** No developer jargon. "Click Save" not "POST to the API."
+- **One action per step.** "Click Create" and "Fill in the name" are two steps, not one.
+- **Include expected results.** After every step, tell the user what they should see.
+- **Be specific in screenshot placeholders.** Include the exact URL, exact state (which filter applied, which data visible), and what to wait for.
+- **Document error states.** If a user does something wrong, what do they see? How do they fix it?
+- **Document role-based differences.** If admins see different options than regular users, document both perspectives.
+- **Link to related features.** Every guide should link to at least one other guide.
+
+## After This Skill
+
+Continue with the standard post-task workflow:
+1. ~~Generate user documentation~~ (you just did this)
+2. Update STATUS.md — mark task DONE
+3. Run `{{TYPE_CHECK_CMD}} && {{LINT_CMD}}`
+4. Commit with `/commit`
+5. Log the session with `/log`

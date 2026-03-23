@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .panel-expanded { width: 340px; min-width: 340px; }
+    .panel-collapsed { width: 48px; min-width: 48px; }
+    .panel-transition { transition: width 300ms ease, min-width 300ms ease, opacity 200ms ease; }
+    .star-btn { cursor: pointer; transition: transform 120ms ease; }
+    .star-btn:hover { transform: scale(1.15); }
+    .tag-pill { transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease; }
+    .iframe-wrapper { flex: 1; min-width: 0; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+    .loading-spinner {
+      border: 3px solid #3f3f46;
+      border-top-color: #a1a1aa;
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="h-full bg-zinc-900 text-zinc-100 overflow-hidden">
+
+  <!-- ===== TOP BAR ===== -->
+  <header class="h-12 flex items-center justify-between px-4 bg-zinc-900 border-b border-zinc-800 select-none shrink-0 z-20 relative">
+    <div class="flex items-center gap-4">
+      <a id="backLink" href="index.html" class="text-sm text-zinc-400 hover:text-zinc-100 transition-colors flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        Gallery
+      </a>
+      <span class="text-zinc-600">|</span>
+      <span id="topDesignName" class="text-sm font-medium text-zinc-200 truncate max-w-xs"></span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="topPrev" class="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors" title="Previous (ArrowLeft)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <span id="topCounter" class="text-xs text-zinc-500 tabular-nums min-w-[60px] text-center"></span>
+      <button id="topNext" class="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors" title="Next (ArrowRight)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== MAIN AREA ===== -->
+  <div class="flex" style="height: calc(100vh - 48px);">
+
+    <!-- IFRAME AREA -->
+    <div class="iframe-wrapper relative bg-zinc-950 flex items-center justify-center">
+      <div id="iframeLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10">
+        <div class="loading-spinner"></div>
+        <span class="text-sm text-zinc-500">Loading design...</span>
+      </div>
+      <div id="iframeError" class="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10 hidden">
+        <svg class="w-10 h-10 text-zinc-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+        <span class="text-sm text-zinc-500">Design file not found</span>
+        <span id="iframeErrorPath" class="text-xs text-zinc-600 font-mono"></span>
+      </div>
+      <iframe id="designIframe" class="w-full h-full border-0 relative z-0" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+
+    <!-- ===== SIDE PANEL ===== -->
+    <aside id="sidePanel" class="panel-expanded panel-transition flex flex-col border-l border-zinc-700 bg-zinc-800/95 shrink-0 overflow-hidden relative">
+
+      <!-- EXPANDED CONTENT -->
+      <div id="panelContent" class="flex flex-col h-full overflow-hidden">
+
+        <!-- Panel Header -->
+        <div class="px-4 pt-4 pb-3 border-b border-zinc-700/60 shrink-0">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2 min-w-0">
+              <span id="screenDot" class="w-2.5 h-2.5 rounded-full shrink-0"></span>
+              <span id="panelScreenName" class="text-sm font-semibold text-zinc-100 truncate"></span>
+            </div>
+            <button id="collapseBtn" class="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors" title="Toggle panel (P)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <span id="panelStyleName" class="text-xs text-zinc-400 truncate block"></span>
+        </div>
+
+        <!-- Scrollable Body -->
+        <div class="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+
+          <!-- Rating -->
+          <div>
+            <label class="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2 block">Rating</label>
+            <div id="starsContainer" class="flex items-center gap-1">
+              <!-- Stars rendered by JS -->
+            </div>
+            <span id="ratingLabel" class="text-xs text-zinc-500 mt-1.5 block"></span>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2 block">Status</label>
+            <div class="flex gap-2">
+              <button id="approveBtn" class="flex-1 text-sm font-medium py-2 px-3 rounded-lg border transition-colors flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                Approve
+              </button>
+              <button id="rejectBtn" class="flex-1 text-sm font-medium py-2 px-3 rounded-lg border transition-colors flex items-center justify-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                Reject
+              </button>
+            </div>
+          </div>
+
+          <!-- Element Tags -->
+          <div id="elementsSection">
+            <label class="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2 block">Elements</label>
+            <div id="elementsContainer" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2 block">Notes</label>
+            <textarea id="notesArea" rows="4" placeholder="Add your feedback..." class="w-full bg-zinc-900/70 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 resize-y focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-colors"></textarea>
+          </div>
+
+          <!-- Timestamp -->
+          <div id="timestampRow" class="hidden">
+            <span class="text-xs text-zinc-500">Reviewed at: <span id="timestampValue" class="text-zinc-400"></span></span>
+          </div>
+
+        </div>
+
+        <!-- Bottom Nav -->
+        <div class="px-4 py-3 border-t border-zinc-700/60 shrink-0 space-y-3">
+          <div class="flex gap-2">
+            <button id="panelPrev" class="flex-1 text-sm py-2 px-3 rounded-lg bg-zinc-700/50 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors flex items-center justify-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              Previous
+            </button>
+            <button id="panelNext" class="flex-1 text-sm py-2 px-3 rounded-lg bg-zinc-700/50 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors flex items-center justify-center gap-1">
+              Next
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <!-- Shortcut hints -->
+          <div class="text-[10px] text-zinc-600 leading-relaxed grid grid-cols-2 gap-x-3 gap-y-0.5">
+            <span><kbd class="text-zinc-500">&larr;&rarr;</kbd> Navigate</span>
+            <span><kbd class="text-zinc-500">1-5</kbd> Rate</span>
+            <span><kbd class="text-zinc-500">A</kbd> Approve</span>
+            <span><kbd class="text-zinc-500">R</kbd> Reject</span>
+            <span><kbd class="text-zinc-500">P/Esc</kbd> Panel</span>
+            <span><kbd class="text-zinc-500">N</kbd> Notes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLLAPSED CONTENT -->
+      <div id="panelCollapsed" class="hidden flex-col items-center h-full py-3 gap-3">
+        <button id="expandBtn" class="p-1.5 rounded hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors" title="Expand panel (P)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <!-- Mini stars -->
+        <div id="miniStars" class="flex flex-col items-center gap-0.5 mt-2">
+          <!-- Filled by JS -->
+        </div>
+        <!-- Mini status dot -->
+        <div id="miniStatus" class="w-3 h-3 rounded-full mt-2 border-2"></div>
+      </div>
+
+    </aside>
+  </div>
+
+  <script>
+    // =================================================================
+    //  CONFIG — to be replaced by the generator
+    // =================================================================
+    const CONFIG = {
+      projectName: '{{PROJECT_NAME}}',
+      designsPath: '{{DESIGNS_PATH}}',
+      thumbsPath: 'thumbs/',
+      screens: [],
+      styles: [],
+      elementsPerScreen: {}
+    };
+
+    // =================================================================
+    //  STATE
+    // =================================================================
+    const storageKey = `designReview_${CONFIG.projectName.replace(/\s+/g, '-').toLowerCase()}`;
+    let reviewData = {};
+    let combinations = [];   // [{styleId, screenId}, ...]
+    let currentIndex = 0;
+    let panelOpen = true;
+
+    // =================================================================
+    //  INIT
+    // =================================================================
+    function init() {
+      loadData();
+      buildCombinations();
+      parseUrlParams();
+      renderStars();
+      render();
+      bindEvents();
+    }
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) reviewData = JSON.parse(raw);
+      } catch (e) { reviewData = {}; }
+    }
+
+    function saveData() {
+      localStorage.setItem(storageKey, JSON.stringify(reviewData));
+    }
+
+    function getReviewKey(styleId, screenId) {
+      return `${styleId}__${screenId}`;
+    }
+
+    function getReview(styleId, screenId) {
+      const key = getReviewKey(styleId, screenId);
+      if (!reviewData[key]) {
+        reviewData[key] = { rating: 0, status: '', notes: '', elements: {}, reviewedAt: null };
+      }
+      return reviewData[key];
+    }
+
+    // =================================================================
+    //  COMBINATIONS
+    // =================================================================
+    function buildCombinations() {
+      combinations = [];
+      for (const style of CONFIG.styles) {
+        for (const screen of CONFIG.screens) {
+          combinations.push({ styleId: style.id, screenId: screen.id });
+        }
+      }
+    }
+
+    function parseUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      const styleParam = params.get('style');
+      const screenParam = params.get('screen');
+      if (styleParam && screenParam) {
+        const idx = combinations.findIndex(c => c.styleId === styleParam && c.screenId === screenParam);
+        if (idx !== -1) currentIndex = idx;
+      }
+    }
+
+    function updateUrl() {
+      const combo = combinations[currentIndex];
+      if (!combo) return;
+      const params = new URLSearchParams(window.location.search);
+      params.set('style', combo.styleId);
+      params.set('screen', combo.screenId);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      history.replaceState(null, '', newUrl);
+    }
+
+    // =================================================================
+    //  LOOKUPS
+    // =================================================================
+    function getStyle(id) { return CONFIG.styles.find(s => s.id === id) || { id, name: id, color: '#a1a1aa' }; }
+    function getScreen(id) { return CONFIG.screens.find(s => s.id === id) || { id, name: id, file: id + '.html', color: '#a1a1aa' }; }
+
+    // =================================================================
+    //  RENDER
+    // =================================================================
+    function render() {
+      if (combinations.length === 0) {
+        document.getElementById('topDesignName').textContent = 'No designs configured';
+        document.getElementById('topCounter').textContent = '0 of 0';
+        return;
+      }
+
+      const combo = combinations[currentIndex];
+      const style = getStyle(combo.styleId);
+      const screen = getScreen(combo.screenId);
+      const review = getReview(combo.styleId, combo.screenId);
+
+      // Top bar
+      document.getElementById('topDesignName').textContent = `${style.name || style.id} / ${screen.name || screen.id}`;
+      document.getElementById('topCounter').textContent = `${currentIndex + 1} of ${combinations.length}`;
+
+      // Panel header
+      document.getElementById('panelStyleName').textContent = style.name || style.id;
+      document.getElementById('panelScreenName').textContent = screen.name || screen.id;
+      document.getElementById('screenDot').style.backgroundColor = screen.color || '#a1a1aa';
+
+      // Stars
+      updateStarsUI(review.rating);
+
+      // Status buttons
+      updateStatusUI(review.status);
+
+      // Elements
+      renderElements(combo.screenId, review);
+
+      // Notes
+      document.getElementById('notesArea').value = review.notes || '';
+
+      // Timestamp
+      const tsRow = document.getElementById('timestampRow');
+      const tsVal = document.getElementById('timestampValue');
+      if (review.reviewedAt) {
+        tsRow.classList.remove('hidden');
+        tsVal.textContent = new Date(review.reviewedAt).toLocaleString();
+      } else {
+        tsRow.classList.add('hidden');
+      }
+
+      // Mini indicators (collapsed)
+      renderMiniIndicators(review);
+
+      // Iframe
+      loadIframe(combo.styleId, screen.file || (combo.screenId + '.html'));
+
+      // URL
+      updateUrl();
+    }
+
+    // =================================================================
+    //  STARS
+    // =================================================================
+    const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'];
+
+    function renderStars() {
+      const container = document.getElementById('starsContainer');
+      container.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'star-btn text-3xl leading-none focus:outline-none';
+        btn.dataset.value = i;
+        btn.setAttribute('aria-label', `Rate ${i} stars`);
+        btn.innerHTML = '&#9733;';
+        container.appendChild(btn);
+      }
+    }
+
+    function updateStarsUI(rating) {
+      const stars = document.querySelectorAll('#starsContainer .star-btn');
+      stars.forEach(s => {
+        const v = parseInt(s.dataset.value);
+        s.style.color = v <= rating ? '#fbbf24' : '#52525b';
+      });
+      const label = document.getElementById('ratingLabel');
+      label.textContent = rating > 0 ? `${rating}/5 — ${ratingLabels[rating]}` : 'Not rated';
+    }
+
+    function setRating(val) {
+      const combo = combinations[currentIndex];
+      if (!combo) return;
+      const review = getReview(combo.styleId, combo.screenId);
+      review.rating = val;
+      markReviewed(review);
+      saveData();
+      updateStarsUI(val);
+      renderMiniIndicators(review);
+      updateTimestamp(review);
+    }
+
+    // =================================================================
+    //  STATUS
+    // =================================================================
+    function updateStatusUI(status) {
+      const approveBtn = document.getElementById('approveBtn');
+      const rejectBtn = document.getElementById('rejectBtn');
+
+      if (status === 'approved') {
+        approveBtn.className = 'flex-1 text-sm font-medium py-2 px-3 rounded-lg border border-emerald-600 bg-emerald-600 text-white transition-colors flex items-center justify-center gap-1.5 hover:bg-emerald-500';
+        rejectBtn.className = 'flex-1 text-sm font-medium py-2 px-3 rounded-lg border border-zinc-600 bg-transparent text-zinc-400 transition-colors flex items-center justify-center gap-1.5 hover:border-red-600 hover:text-red-400';
+      } else if (status === 'rejected') {
+        approveBtn.className = 'flex-1 text-sm font-medium py-2 px-3 rounded-lg border border-zinc-600 bg-transparent text-zinc-400 transition-colors flex items-center justify-center gap-1.5 hover:border-emerald-600 hover:text-emerald-400';
+        rejectBtn.className = 'flex-1 text-sm font-medium py-2 px-3 rounded-lg border border-red-600 bg-red-600 text-white transition-colors flex items-center justify-center gap-1.5 hover:bg-red-500';
+      } else {
+        approveBtn.className = 'flex-1 text-sm font-medium py-2 px-3 rounded-lg border border-zinc-600 bg-transparent text-zinc-400 transition-colors flex items-center justify-center gap-1.5 hover:border-emerald-600 hover:text-emerald-400';
+        rejectBtn.className = 'flex-1 text-sm font-medium py-2 px-3 rounded-lg border border-zinc-600 bg-transparent text-zinc-400 transition-colors flex items-center justify-center gap-1.5 hover:border-red-600 hover:text-red-400';
+      }
+    }
+
+    function setStatus(newStatus) {
+      const combo = combinations[currentIndex];
+      if (!combo) return;
+      const review = getReview(combo.styleId, combo.screenId);
+      review.status = review.status === newStatus ? '' : newStatus;
+      markReviewed(review);
+      saveData();
+      updateStatusUI(review.status);
+      renderMiniIndicators(review);
+      updateTimestamp(review);
+    }
+
+    // =================================================================
+    //  ELEMENTS
+    // =================================================================
+    const tagStates = ['neutral', 'liked', 'disliked'];
+    const tagClasses = {
+      neutral:   'bg-zinc-700 text-zinc-300 border-zinc-600',
+      liked:     'bg-emerald-600/20 text-emerald-400 border-emerald-600/50',
+      disliked:  'bg-red-600/20 text-red-400 border-red-600/50'
+    };
+
+    function renderElements(screenId, review) {
+      const container = document.getElementById('elementsContainer');
+      const section = document.getElementById('elementsSection');
+      const elements = CONFIG.elementsPerScreen[screenId];
+
+      if (!elements || elements.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+      section.classList.remove('hidden');
+      container.innerHTML = '';
+
+      if (!review.elements) review.elements = {};
+
+      elements.forEach(el => {
+        const state = review.elements[el] || 'neutral';
+        const pill = document.createElement('button');
+        pill.className = `tag-pill text-xs px-3 py-1 rounded-full border cursor-pointer focus:outline-none ${tagClasses[state]}`;
+        pill.textContent = el;
+        pill.dataset.element = el;
+        pill.addEventListener('click', () => cycleElementState(el));
+        container.appendChild(pill);
+      });
+    }
+
+    function cycleElementState(el) {
+      const combo = combinations[currentIndex];
+      if (!combo) return;
+      const review = getReview(combo.styleId, combo.screenId);
+      if (!review.elements) review.elements = {};
+      const current = review.elements[el] || 'neutral';
+      const idx = tagStates.indexOf(current);
+      const next = tagStates[(idx + 1) % tagStates.length];
+      review.elements[el] = next;
+      markReviewed(review);
+      saveData();
+      // Update just this pill
+      const pill = document.querySelector(`[data-element="${CSS.escape(el)}"]`);
+      if (pill) {
+        pill.className = `tag-pill text-xs px-3 py-1 rounded-full border cursor-pointer focus:outline-none ${tagClasses[next]}`;
+      }
+      renderMiniIndicators(review);
+      updateTimestamp(review);
+    }
+
+    // =================================================================
+    //  NOTES
+    // =================================================================
+    function saveNotes() {
+      const combo = combinations[currentIndex];
+      if (!combo) return;
+      const review = getReview(combo.styleId, combo.screenId);
+      const val = document.getElementById('notesArea').value.trim();
+      if (review.notes !== val) {
+        review.notes = val;
+        if (val) markReviewed(review);
+        saveData();
+        updateTimestamp(review);
+      }
+    }
+
+    // =================================================================
+    //  TIMESTAMP
+    // =================================================================
+    function markReviewed(review) {
+      review.reviewedAt = new Date().toISOString();
+    }
+
+    function updateTimestamp(review) {
+      const tsRow = document.getElementById('timestampRow');
+      const tsVal = document.getElementById('timestampValue');
+      if (review.reviewedAt) {
+        tsRow.classList.remove('hidden');
+        tsVal.textContent = new Date(review.reviewedAt).toLocaleString();
+      }
+    }
+
+    // =================================================================
+    //  MINI INDICATORS (collapsed panel)
+    // =================================================================
+    function renderMiniIndicators(review) {
+      // Mini stars
+      const container = document.getElementById('miniStars');
+      container.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const s = document.createElement('span');
+        s.className = 'text-xs leading-none';
+        s.style.color = i <= (review.rating || 0) ? '#fbbf24' : '#52525b';
+        s.innerHTML = '&#9733;';
+        container.appendChild(s);
+      }
+      // Mini status
+      const dot = document.getElementById('miniStatus');
+      if (review.status === 'approved') {
+        dot.className = 'w-3 h-3 rounded-full mt-2 bg-emerald-500 border-2 border-emerald-400';
+      } else if (review.status === 'rejected') {
+        dot.className = 'w-3 h-3 rounded-full mt-2 bg-red-500 border-2 border-red-400';
+      } else {
+        dot.className = 'w-3 h-3 rounded-full mt-2 bg-zinc-700 border-2 border-zinc-600';
+      }
+    }
+
+    // =================================================================
+    //  IFRAME
+    // =================================================================
+    function loadIframe(styleId, screenFile) {
+      const iframe = document.getElementById('designIframe');
+      const loading = document.getElementById('iframeLoading');
+      const error = document.getElementById('iframeError');
+      const errorPath = document.getElementById('iframeErrorPath');
+
+      const src = `${CONFIG.designsPath}/${styleId}/${screenFile}`;
+
+      loading.classList.remove('hidden');
+      error.classList.add('hidden');
+      iframe.style.opacity = '0';
+
+      iframe.onload = () => {
+        loading.classList.add('hidden');
+        error.classList.add('hidden');
+        iframe.style.opacity = '1';
+      };
+
+      iframe.onerror = () => {
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+        errorPath.textContent = src;
+        iframe.style.opacity = '0';
+      };
+
+      iframe.src = src;
+    }
+
+    // =================================================================
+    //  PANEL TOGGLE
+    // =================================================================
+    function togglePanel() {
+      panelOpen = !panelOpen;
+      const panel = document.getElementById('sidePanel');
+      const content = document.getElementById('panelContent');
+      const collapsed = document.getElementById('panelCollapsed');
+
+      if (panelOpen) {
+        panel.classList.remove('panel-collapsed');
+        panel.classList.add('panel-expanded');
+        content.classList.remove('hidden');
+        content.classList.add('flex');
+        collapsed.classList.add('hidden');
+        collapsed.classList.remove('flex');
+      } else {
+        panel.classList.remove('panel-expanded');
+        panel.classList.add('panel-collapsed');
+        content.classList.add('hidden');
+        content.classList.remove('flex');
+        collapsed.classList.remove('hidden');
+        collapsed.classList.add('flex');
+      }
+    }
+
+    // =================================================================
+    //  NAVIGATION
+    // =================================================================
+    function navigate(delta) {
+      if (combinations.length === 0) return;
+      saveNotes();
+      currentIndex = (currentIndex + delta + combinations.length) % combinations.length;
+      render();
+    }
+
+    // =================================================================
+    //  EVENTS
+    // =================================================================
+    function bindEvents() {
+      // Stars
+      document.getElementById('starsContainer').addEventListener('click', e => {
+        const btn = e.target.closest('.star-btn');
+        if (btn) setRating(parseInt(btn.dataset.value));
+      });
+
+      // Status
+      document.getElementById('approveBtn').addEventListener('click', () => setStatus('approved'));
+      document.getElementById('rejectBtn').addEventListener('click', () => setStatus('rejected'));
+
+      // Notes auto-save
+      document.getElementById('notesArea').addEventListener('blur', saveNotes);
+
+      // Navigation
+      document.getElementById('topPrev').addEventListener('click', () => navigate(-1));
+      document.getElementById('topNext').addEventListener('click', () => navigate(1));
+      document.getElementById('panelPrev').addEventListener('click', () => navigate(-1));
+      document.getElementById('panelNext').addEventListener('click', () => navigate(1));
+
+      // Panel toggle
+      document.getElementById('collapseBtn').addEventListener('click', togglePanel);
+      document.getElementById('expandBtn').addEventListener('click', togglePanel);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', handleKeyboard);
+    }
+
+    function handleKeyboard(e) {
+      // Do not capture when notes textarea is focused
+      const notesArea = document.getElementById('notesArea');
+      if (document.activeElement === notesArea) {
+        // Allow Escape to blur out of notes
+        if (e.key === 'Escape') {
+          notesArea.blur();
+          e.preventDefault();
+        }
+        return;
+      }
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          navigate(-1);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          navigate(1);
+          break;
+        case '1': case '2': case '3': case '4': case '5':
+          e.preventDefault();
+          setRating(parseInt(e.key));
+          break;
+        case 'a': case 'A':
+          e.preventDefault();
+          setStatus('approved');
+          break;
+        case 'r': case 'R':
+          e.preventDefault();
+          setStatus('rejected');
+          break;
+        case 'p': case 'P': case 'Escape':
+          e.preventDefault();
+          togglePanel();
+          break;
+        case 'n': case 'N':
+          e.preventDefault();
+          if (panelOpen) {
+            notesArea.focus();
+          }
+          break;
+      }
+    }
+
+    // =================================================================
+    //  BOOT
+    // =================================================================
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+
+</body>
+</html>

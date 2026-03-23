@@ -1,0 +1,326 @@
+# Component System Guide
+
+Standards for building, naming, organizing, and documenting UI components
+in the {{PROJECT_NAME}} design system.
+
+---
+
+## Template Variables
+
+- `{{PROJECT_NAME}}` -- Project name
+- `{{COMPONENT_PREFIX}}` -- Optional prefix for domain components (e.g., `tms`, `crm`)
+- `{{FRONTEND_FRAMEWORK}}` -- UI framework: `react` | `next` | `vue` | `svelte`
+- `{{CSS_FRAMEWORK}}` -- Styling approach: `tailwind` | `css-modules` | `styled-components`
+
+---
+
+## 1. Naming Conventions
+
+### File Naming
+
+| Type            | Pattern                          | Example                          |
+|-----------------|----------------------------------|----------------------------------|
+| Shared UI       | `PascalCase.tsx`                 | `Button.tsx`, `DataTable.tsx`    |
+| Domain-specific | `PascalCase.tsx` in domain dir   | `LoadCard.tsx`, `CarrierBadge.tsx` |
+| Story           | `ComponentName.stories.tsx`      | `Button.stories.tsx`             |
+| Test            | `ComponentName.test.tsx`         | `Button.test.tsx`                |
+| Types           | `ComponentName.types.ts`         | `DataTable.types.ts`             |
+| Hooks           | `use-feature-name.ts`            | `use-debounce.ts`                |
+
+### Component Naming Rules
+
+- PascalCase for all component names
+- Noun-first for data display: `LoadCard`, `CarrierTable`, `InvoiceList`
+- Verb-first for actions: `CreateLoadDialog`, `EditCarrierForm`
+- Suffix patterns:
+  - `*Card` -- summary display in a card
+  - `*Table` -- tabular data display
+  - `*List` -- vertical list display
+  - `*Form` -- data input form
+  - `*Dialog` -- modal dialog
+  - `*Badge` -- inline status indicator
+  - `*Layout` -- page layout wrapper
+  - `*Provider` -- context provider
+
+---
+
+## 2. File Structure
+
+### Single Component (simple)
+
+```
+components/ui/
+  Button.tsx              # Component + variants
+  Button.stories.tsx      # Storybook stories
+  Button.test.tsx         # Unit tests
+```
+
+### Compound Component (complex)
+
+```
+components/ui/data-table/
+  index.ts                # Public API (re-exports)
+  DataTable.tsx           # Root component
+  DataTableHeader.tsx     # Sub-component
+  DataTableRow.tsx        # Sub-component
+  DataTablePagination.tsx # Sub-component
+  data-table.types.ts     # Shared types
+  data-table.utils.ts     # Helper functions
+  DataTable.stories.tsx   # Stories
+  DataTable.test.tsx      # Tests
+```
+
+### Domain Component
+
+```
+components/{{COMPONENT_PREFIX}}/loads/
+  LoadCard.tsx
+  LoadStatusBadge.tsx
+  LoadCard.stories.tsx
+```
+
+### Directory Organization
+
+```
+components/
+  ui/                     # Shared primitives (Button, Input, Dialog, etc.)
+  {{COMPONENT_PREFIX}}/   # Domain-specific components
+    loads/                # Load management components
+    carriers/             # Carrier components
+    shared/               # Shared domain components (DotLabel, etc.)
+  layout/                 # Layout components (Sidebar, Header, PageShell)
+  providers/              # Context providers (ThemeProvider, AuthProvider)
+```
+
+---
+
+## 3. Props Interface Pattern
+
+### Standard Props Template
+
+```typescript
+import { type VariantProps } from 'class-variance-authority';
+import { type ComponentPropsWithoutRef } from 'react';
+
+/**
+ * Props for the {{ComponentName}} component.
+ *
+ * @example
+ * ```tsx
+ * <{{ComponentName}} variant="outline" size="sm">
+ *   Content
+ * </{{ComponentName}}>
+ * ```
+ */
+export interface {{ComponentName}}Props
+  extends ComponentPropsWithoutRef<'{{html_element}}'>
+  , VariantProps<typeof {{componentName}}Variants> {
+  /** Brief description of what this prop controls */
+  customProp?: string;
+}
+```
+
+### Rules for Props
+
+1. **Extend native HTML props** using `ComponentPropsWithoutRef<'element'>` --
+   this gives consumers access to all native attributes (className, id, aria-*, etc.)
+2. **Intersect with VariantProps** when using cva for variants
+3. **Document every custom prop** with JSDoc comments
+4. **Use optional props** with sensible defaults -- required props should be rare
+5. **Prefer primitives** over complex objects for simple props
+6. **Export the interface** so consumers can reference it
+
+### Common Prop Patterns
+
+```typescript
+// Polymorphic "as" prop
+interface BoxProps<T extends React.ElementType = 'div'> {
+  as?: T;
+  children?: React.ReactNode;
+}
+
+// Slot pattern (for compound components)
+interface CardProps {
+  children?: React.ReactNode;
+  header?: React.ReactNode;
+  footer?: React.ReactNode;
+}
+
+// Controlled + uncontrolled
+interface InputProps {
+  value?: string;                    // Controlled
+  defaultValue?: string;             // Uncontrolled
+  onChange?: (value: string) => void; // Callback
+}
+
+// Loading / async state
+interface ButtonProps {
+  isLoading?: boolean;
+  loadingText?: string;
+  disabled?: boolean;
+}
+```
+
+---
+
+## 4. Composition Pattern (Compound Components)
+
+For complex components with multiple related parts:
+
+```tsx
+// DataTable compound component
+import { createContext, useContext } from 'react';
+
+// 1. Create shared context
+interface DataTableContextValue<T> {
+  data: T[];
+  columns: ColumnDef<T>[];
+  sorting: SortingState;
+  onSortingChange: (sorting: SortingState) => void;
+}
+
+const DataTableContext = createContext<DataTableContextValue<unknown> | null>(null);
+
+function useDataTable() {
+  const ctx = useContext(DataTableContext);
+  if (!ctx) throw new Error('useDataTable must be used within DataTable');
+  return ctx;
+}
+
+// 2. Root component provides context
+function DataTableRoot<T>({ data, columns, children }: DataTableRootProps<T>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  return (
+    <DataTableContext.Provider value={{ data, columns, sorting, onSortingChange: setSorting }}>
+      <div className="rounded-lg border border-border">{children}</div>
+    </DataTableContext.Provider>
+  );
+}
+
+// 3. Sub-components consume context
+function DataTableHeader() {
+  const { columns, sorting, onSortingChange } = useDataTable();
+  return <thead>...</thead>;
+}
+
+function DataTableBody() {
+  const { data, columns } = useDataTable();
+  return <tbody>...</tbody>;
+}
+
+function DataTablePagination() { /* ... */ }
+
+// 4. Compose and export
+export const DataTable = Object.assign(DataTableRoot, {
+  Header: DataTableHeader,
+  Body: DataTableBody,
+  Pagination: DataTablePagination,
+});
+```
+
+### Usage
+
+```tsx
+<DataTable data={loads} columns={columns}>
+  <DataTable.Header />
+  <DataTable.Body />
+  <DataTable.Pagination />
+</DataTable>
+```
+
+---
+
+## 5. Variant System (class-variance-authority)
+
+All visual variants are defined with `cva` (class-variance-authority):
+
+```typescript
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+
+// 1. Define variants
+const buttonVariants = cva(
+  // Base classes (always applied)
+  'inline-flex items-center justify-center rounded-md font-medium transition-colors ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
+  'disabled:pointer-events-none disabled:opacity-50',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        link: 'text-primary underline-offset-4 hover:underline',
+      },
+      size: {
+        sm: 'h-8 px-3 text-xs',
+        md: 'h-9 px-4 text-sm',
+        lg: 'h-10 px-6 text-base',
+        icon: 'h-9 w-9',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'md',
+    },
+  }
+);
+
+// 2. Use in component
+interface ButtonProps
+  extends ComponentPropsWithoutRef<'button'>,
+    VariantProps<typeof buttonVariants> {}
+
+function Button({ className, variant, size, ...props }: ButtonProps) {
+  return (
+    <button className={cn(buttonVariants({ variant, size }), className)} {...props} />
+  );
+}
+
+// 3. Export both
+export { Button, buttonVariants };
+```
+
+### Variant Rules
+
+- **One cva per component** -- keeps variant logic centralized
+- **Export the variants function** -- lets other components reuse variant styles
+- **Always include `defaultVariants`** -- components should work with zero props
+- **Use `cn()` to merge** -- allows className overrides from consumers
+- **Semantic names** -- `variant` for visual style, `size` for dimensions
+
+---
+
+## 6. Accessibility Requirements
+
+### Per Component Type
+
+| Component Type | Requirements |
+|----------------|-------------|
+| **Button**     | `role="button"`, keyboard activation (Enter/Space), visible focus ring, `disabled` + `aria-disabled`, loading state announced |
+| **Input**      | Associated `<label>`, `aria-describedby` for help/error text, `aria-invalid` for errors, `required` attribute |
+| **Dialog**     | `role="dialog"`, `aria-labelledby`, `aria-describedby`, focus trap, Escape to close, return focus on close |
+| **Select**     | `role="listbox"`, arrow key navigation, typeahead search, `aria-expanded`, `aria-selected` |
+| **Table**      | `role="table"`, `<th scope="col/row">`, sortable headers with `aria-sort`, caption or `aria-label` |
+| **Badge/Tag**  | Informational: no role needed. Interactive: `role="button"`, focusable. Status: text label always present (not color alone) |
+| **Toast**      | `role="alert"` or `role="status"`, `aria-live="polite"`, auto-dismiss with adequate time (5s+) |
+| **Tabs**       | `role="tablist"`, `role="tab"`, `role="tabpanel"`, arrow key navigation, `aria-selected` |
+| **Sidebar**    | `<nav>` element, `aria-label`, `aria-current="page"` for active link |
+
+### Universal Requirements
+
+1. **Focus visible:** All interactive elements must show a visible focus ring (`focus-visible:ring-2 ring-ring`)
+2. **Color not alone:** Never convey information through color alone -- always pair with text, icon, or pattern
+3. **Keyboard navigable:** Every interactive element reachable and operable via keyboard
+4. **Screen reader text:** Use `sr-only` class for visually hidden but announced text
+5. **Reduced motion:** Respect `prefers-reduced-motion` for animations
+6. **Touch targets:** Minimum 44x44px for touch targets on mobile
+
+### Testing Accessibility
+
+- Use `@storybook/addon-a11y` for automated checks in Storybook
+- Run axe-core in CI (`jest-axe` or `@axe-core/playwright`)
+- Manual testing: keyboard-only navigation, screen reader (NVDA/VoiceOver)
