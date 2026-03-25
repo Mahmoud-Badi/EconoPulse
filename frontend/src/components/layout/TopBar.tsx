@@ -31,7 +31,7 @@ export function TopBar() {
         <span className="font-mono font-bold text-accent-amber text-sm tracking-wider">ECONOPULSE</span>
         <span className="text-text-dim text-xs">v1.0</span>
       </div>
-      <div className="flex items-center gap-6">
+      <div className="hidden sm:flex items-center gap-6">
         <span className="font-data text-text-secondary text-xs">
           {time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
         </span>
@@ -68,7 +68,7 @@ export function TopBar() {
         {!isLoading && (
           user ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-text-dim truncate max-w-[120px]">{user.email}</span>
+              <span className="hidden sm:block text-xs font-mono text-text-dim truncate max-w-[120px]">{user.email}</span>
               <button
                 onClick={logout}
                 className="text-xs font-mono px-2 py-1 border border-border-default text-text-dim hover:text-accent-red hover:border-accent-red transition-colors rounded"

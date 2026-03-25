@@ -44,7 +44,7 @@ export function OverviewPanel() {
       {/* Section: Major Indices */}
       <div>
         <h2 className="text-text-dim text-[10px] font-mono uppercase tracking-widest mb-2">Major Indices</h2>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {indicesLoading
             ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
             : indices.map((idx: any) => (
@@ -60,7 +60,7 @@ export function OverviewPanel() {
       </div>
 
       {/* Section: Fear/Greed + Macro */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-bg-panel border border-border-default rounded p-3">
           <div className="text-text-dim text-[10px] font-mono uppercase tracking-wider mb-1">Fear & Greed Index</div>
           {fgLoading ? (
@@ -78,7 +78,7 @@ export function OverviewPanel() {
       </div>
 
       {/* Section: Top Crypto + Commodities */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <h2 className="text-text-dim text-[10px] font-mono uppercase tracking-widest mb-2">Top Crypto</h2>
           <div className="bg-bg-panel border border-border-default rounded overflow-hidden">
@@ -136,8 +136,8 @@ export function OverviewPanel() {
       </div>
 
       {/* Section: News + Forex */}
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="md:col-span-3">
           <h2 className="text-text-dim text-[10px] font-mono uppercase tracking-widest mb-2">Latest Headlines</h2>
           <div className="space-y-1">
             {newsLoading ? (
@@ -165,9 +165,9 @@ export function OverviewPanel() {
             )}
           </div>
         </div>
-        <div className="col-span-2">
+        <div className="md:col-span-2">
           <h2 className="text-text-dim text-[10px] font-mono uppercase tracking-widest mb-2">Forex Snapshot</h2>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-2">
             {forexLoading
               ? Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
               : forexPairs.map((pair: any) => (

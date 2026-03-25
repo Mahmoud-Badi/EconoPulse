@@ -78,8 +78,8 @@ export function WatchlistPanel() {
           No symbols yet. Add tickers above.
         </div>
       ) : (
-        <div className="bg-bg-panel border border-border-default rounded overflow-hidden">
-          <table className="w-full text-xs font-mono">
+        <div className="bg-bg-panel border border-border-default rounded overflow-hidden overflow-x-auto">
+          <table className="w-full min-w-[360px] text-xs font-mono">
             <thead>
               <tr className="border-b border-border-default text-text-dim">
                 <th className="p-2 text-left">Symbol</th>

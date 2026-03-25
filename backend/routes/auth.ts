@@ -1,20 +1,24 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
+import { z } from 'zod'
 import { getUserByEmail, createUser } from '../lib/db'
 import { signToken, requireAuth, AuthRequest } from '../middleware/auth'
 
 const router = Router()
 
+const authSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body as { email?: string; password?: string }
-    if (!email || !password) {
-      return res.status(400).json({ error: true, message: 'Email and password required' })
+    const result = authSchema.safeParse(req.body)
+    if (!result.success) {
+      return res.status(400).json({ error: true, message: result.error.issues[0].message })
     }
-    if (password.length < 8) {
-      return res.status(400).json({ error: true, message: 'Password must be at least 8 characters' })
-    }
+    const { email, password } = result.data
 
     const existing = await getUserByEmail(email.toLowerCase())
     if (existing) {
@@ -39,10 +43,11 @@ router.post('/register', async (req: Request, res: Response) => {
 
 router.post('/login', async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body as { email?: string; password?: string }
-    if (!email || !password) {
-      return res.status(400).json({ error: true, message: 'Email and password required' })
+    const result = authSchema.safeParse(req.body)
+    if (!result.success) {
+      return res.status(400).json({ error: true, message: result.error.issues[0].message })
     }
+    const { email, password } = result.data
 
     const user = await getUserByEmail(email.toLowerCase())
     if (!user) {

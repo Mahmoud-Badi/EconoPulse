@@ -25,7 +25,7 @@ export default function App() {
             <TopBar />
             <div className="flex flex-1 overflow-hidden">
               <Sidebar />
-              <main className="flex-1 overflow-y-auto p-4 panel-transition">
+              <main className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4 panel-transition">
                 <ErrorBoundary>
                   <Routes>
                     <Route path="/" element={<OverviewPanel />} />

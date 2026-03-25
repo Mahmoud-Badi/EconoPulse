@@ -38,7 +38,7 @@ export function StocksPanel() {
       {/* Index cards */}
       <div>
         <h2 className="text-text-dim text-[10px] font-mono uppercase tracking-widest mb-2">Indices</h2>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {indicesLoading
             ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
             : indices.map((idx: any) => (
@@ -57,8 +57,8 @@ export function StocksPanel() {
         ) : stocksLoading ? (
           <TableSkeleton rows={10} />
         ) : (
-          <div className="bg-bg-panel border border-border-default rounded overflow-hidden">
-            <table className="w-full text-xs font-mono">
+          <div className="bg-bg-panel border border-border-default rounded overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[480px] text-xs font-mono">
               <thead>
                 <tr className="border-b border-border-default text-text-dim">
                   {[
