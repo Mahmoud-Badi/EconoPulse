@@ -40,7 +40,9 @@
       "Bash(curl -s --max-time 20 \"https://www.econopulse.live/api/stocks/quotes\")",
       "Bash(curl -s --max-time 20 \"https://www.econopulse.live/api/stocks/indices\")",
       "Bash(curl -s --max-time 25 \"https://www.econopulse.live/api/crypto/global\")",
-      "Bash(curl -s --max-time 25 \"https://www.econopulse.live/api/crypto/listings\")"
+      "Bash(curl -s --max-time 25 \"https://www.econopulse.live/api/crypto/listings\")",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

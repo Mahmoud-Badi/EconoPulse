@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +15,16 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(express.json());
+
+// Rate limiting — prevent API abuse
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60,             // 60 requests per IP per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: true, message: 'Too many requests, please slow down.' },
+})
+app.use('/api/', limiter);
 
 // Cache-Control headers per route type
 app.use((req, res, next) => {

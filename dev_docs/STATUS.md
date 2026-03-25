@@ -1,8 +1,8 @@
 # EconoPulse — Status Dashboard
 
-> **Last updated:** 2026-03-23
-> **Phase:** Enhancement Foundation (Phase 0)
-> **Active sprint:** Sprint 1 — Security + Quick Wins
+> **Last updated:** 2026-03-25
+> **Phase:** Phase 1 — Foundation Improvements (Tier 2)
+> **Active sprint:** Sprint 3
 
 ---
 
@@ -11,10 +11,10 @@
 | Metric | Value |
 |--------|-------|
 | Composite score at intake | 3.7/10 |
-| Tier 1 blockers remaining | 7 / 7 |
+| Tier 1 blockers remaining | 0 / 7 ✅ |
 | Tier 2 items remaining | 11 / 11 |
 | Tier 3 items remaining | 8 / 8 |
-| Critical gaps remaining | 3 (auth, tests, CI) |
+| Critical gaps remaining | 1 (auth) |
 | High gaps remaining | 5 (TS backend, watchlist, WebSocket, ESLint, URL routing) |
 | Target composite score | ≥7.5/10 |
 
@@ -26,13 +26,13 @@
 
 | ID | Task | Status | Sprint |
 |----|------|--------|--------|
-| T1-01 | Rotate exposed API keys + sanitize .env.example | ⬜ Todo | S1 |
-| T1-02 | Restrict CORS to known origin | ⬜ Todo | S1 |
-| T1-06 | Fix macro data cache TTL (60s → 24h) | ⬜ Todo | S1 |
-| T1-07 | Add HTTP Cache-Control headers | ⬜ Todo | S1 |
-| T1-03 | Install test infrastructure (Vitest + RTL + Supertest) | ⬜ Todo | S2 |
-| T1-04 | Write core test suite (10+ tests) | ⬜ Todo | S2 |
-| T1-05 | Set up GitHub Actions CI pipeline | ⬜ Todo | S2 |
+| T1-01 | Rotate exposed API keys + sanitize .env.example | ✅ Done | S1 |
+| T1-02 | Restrict CORS to known origin | ✅ Done | S1 |
+| T1-06 | Fix macro data cache TTL (60s → 24h) | ✅ Done | S1 |
+| T1-07 | Add HTTP Cache-Control headers | ✅ Done | S1 |
+| T1-03 | Install test infrastructure (Vitest + RTL + Supertest) | ✅ Done | S2 |
+| T1-04 | Write core test suite (10+ tests) | ✅ Done | S2 |
+| T1-05 | Set up GitHub Actions CI pipeline | ✅ Done | S2 |
 
 ---
 
@@ -40,14 +40,14 @@
 
 | ID | Task | Status | Sprint |
 |----|------|--------|--------|
-| T2-04 | Add React ErrorBoundary | ⬜ Todo | S1 |
-| T2-06 | Add express-rate-limit | ⬜ Todo | S2 |
-| T2-01 | Convert backend to TypeScript | ⬜ Todo | S3 |
-| T2-02 | Extract NodeCache singleton + cacheOrFetch | ⬜ Todo | S3 |
-| T2-05 | Add ESLint + Prettier | ⬜ Todo | S3 |
-| T2-03 | Add URL-based routing (React Router) | ⬜ Todo | S4 |
-| T2-07 | Add Sentry error tracking | ⬜ Todo | S4 |
-| T2-10 | Add structured logging (Pino) | ⬜ Todo | S4 |
+| T2-04 | Add React ErrorBoundary | ✅ Done | S1 |
+| T2-06 | Add express-rate-limit | ✅ Done | S2 |
+| T2-01 | Convert backend to TypeScript | ✅ Done | S3 |
+| T2-02 | Extract NodeCache singleton + cacheOrFetch | ✅ Done | S3 |
+| T2-05 | Add ESLint + Prettier | ✅ Done | S3 |
+| T2-03 | Add URL-based routing (React Router) | ✅ Done | S4 |
+| T2-07 | Add Sentry error tracking | ✅ Done | S4 |
+| T2-10 | Add structured logging (Pino) | ✅ Done | S4 |
 
 ---
 
@@ -55,9 +55,9 @@
 
 | ID | Task | Status | Sprint |
 |----|------|--------|--------|
-| T2-08 | User authentication (JWT + database) | ⬜ Todo | S5-S6 |
-| T2-09 | Watchlist feature (saved symbols) | ⬜ Todo | S6 |
-| T2-11 | Document API endpoints (OpenAPI/Markdown) | ⬜ Todo | S6 |
+| T2-08 | User authentication (JWT + database) | ✅ Done | S5-S6 |
+| T2-09 | Watchlist feature (saved symbols) | ✅ Done | S6 |
+| T2-11 | Document API endpoints (OpenAPI/Markdown) | ✅ Done | S6 |
 
 ---
 

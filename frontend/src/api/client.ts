@@ -1,9 +1,16 @@
 import axios from 'axios'
-import type { ApiResponse, StockQuote, IndexQuote, MacroDataPoint, CryptoListing, CryptoGlobal, ForexPair, Commodity, NewsArticle, SentimentData, MarketNewsItem } from '../types'
+import type { ApiResponse, StockQuote, IndexQuote, MacroDataPoint, CryptoListing, CryptoGlobal, ForexPair, Commodity, NewsArticle, SentimentData, MarketNewsItem, AuthResponse, AuthUser } from '../types'
 
 const api = axios.create({
   baseURL: '/api',
   timeout: 10000,
+})
+
+// Attach JWT token to every request if present
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('ep_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
 })
 
 export const stocksApi = {
@@ -41,4 +48,18 @@ export const newsApi = {
 export const sentimentApi = {
   getFearGreed: () => api.get<ApiResponse<SentimentData>>('/sentiment/fear-greed').then(r => r.data),
   getMarketNews: () => api.get<ApiResponse<MarketNewsItem[]>>('/sentiment/market-news').then(r => r.data),
+}
+
+export const authApi = {
+  register: (email: string, password: string) =>
+    api.post<AuthResponse>('/auth/register', { email, password }).then(r => r.data),
+  login: (email: string, password: string) =>
+    api.post<AuthResponse>('/auth/login', { email, password }).then(r => r.data),
+  me: () => api.get<{ user: AuthUser }>('/auth/me').then(r => r.data),
+}
+
+export const watchlistApi = {
+  get: () => api.get<{ data: string[] }>('/watchlist').then(r => r.data.data),
+  add: (symbol: string) => api.post<{ data: string[] }>(`/watchlist/${symbol}`).then(r => r.data.data),
+  remove: (symbol: string) => api.delete<{ data: string[] }>(`/watchlist/${symbol}`).then(r => r.data.data),
 }

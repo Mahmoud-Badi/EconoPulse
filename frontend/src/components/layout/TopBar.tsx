@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { AuthModal } from './AuthModal'
 
 export function TopBar() {
   const [time, setTime] = useState(new Date())
   const { theme, toggleTheme } = useTheme()
+  const { user, logout, isLoading } = useAuth()
+  const [showAuth, setShowAuth] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
@@ -61,7 +65,28 @@ export function TopBar() {
             {marketOpen ? 'US OPEN' : 'US CLOSED'}
           </span>
         </div>
+        {!isLoading && (
+          user ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-text-dim truncate max-w-[120px]">{user.email}</span>
+              <button
+                onClick={logout}
+                className="text-xs font-mono px-2 py-1 border border-border-default text-text-dim hover:text-accent-red hover:border-accent-red transition-colors rounded"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuth(true)}
+              className="text-xs font-mono px-3 py-1 border border-accent-amber text-accent-amber hover:bg-accent-amber hover:text-bg-primary transition-colors rounded"
+            >
+              Sign In
+            </button>
+          )
+        )}
       </div>
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </header>
   )
 }
