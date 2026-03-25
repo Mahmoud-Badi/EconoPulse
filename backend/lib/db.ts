@@ -1,6 +1,8 @@
-// User stored as hash at key `user:{id}`
+import { createClient } from 'redis'
+
+// User stored at key `user:{id}`
 // Email→id index at key `email:{email}`
-// Watchlist stored as set at key `watchlist:{userId}`
+// Watchlist stored at key `watchlist:{userId}`
 
 export interface User {
   id: string
@@ -9,47 +11,59 @@ export interface User {
   createdAt: string
 }
 
-function getKv() {
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-    throw new Error('KV not configured. Add KV_REST_API_URL and KV_REST_API_TOKEN env vars.')
+let client: ReturnType<typeof createClient> | null = null
+
+async function getClient() {
+  if (!process.env.REDIS_URL) {
+    throw new Error('REDIS_URL env var is not set.')
   }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('@vercel/kv').kv as import('@vercel/kv').VercelKV
+  if (!client) {
+    client = createClient({ url: process.env.REDIS_URL })
+    client.on('error', (err) => console.error('Redis error:', err))
+    await client.connect()
+  }
+  return client
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const kv = getKv()
-  const id = await kv.get<string>(`email:${email}`)
+  const r = await getClient()
+  const id = await r.get(`email:${email}`)
   if (!id) return null
-  return kv.get<User>(`user:${id}`)
+  const raw = await r.get(`user:${id}`)
+  return raw ? JSON.parse(raw) : null
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  return getKv().get<User>(`user:${id}`)
+  const r = await getClient()
+  const raw = await r.get(`user:${id}`)
+  return raw ? JSON.parse(raw) : null
 }
 
 export async function createUser(user: User): Promise<void> {
-  const kv = getKv()
-  await kv.set(`user:${user.id}`, user)
-  await kv.set(`email:${user.email}`, user.id)
+  const r = await getClient()
+  await r.set(`user:${user.id}`, JSON.stringify(user))
+  await r.set(`email:${user.email}`, user.id)
 }
 
 export async function getWatchlist(userId: string): Promise<string[]> {
-  const list = await getKv().get<string[]>(`watchlist:${userId}`)
-  return list ?? []
+  const r = await getClient()
+  const raw = await r.get(`watchlist:${userId}`)
+  return raw ? JSON.parse(raw) : []
 }
 
 export async function addToWatchlist(userId: string, symbol: string): Promise<string[]> {
   const current = await getWatchlist(userId)
   if (current.includes(symbol)) return current
   const updated = [...current, symbol.toUpperCase()]
-  await getKv().set(`watchlist:${userId}`, updated)
+  const r = await getClient()
+  await r.set(`watchlist:${userId}`, JSON.stringify(updated))
   return updated
 }
 
 export async function removeFromWatchlist(userId: string, symbol: string): Promise<string[]> {
   const current = await getWatchlist(userId)
   const updated = current.filter((s) => s !== symbol.toUpperCase())
-  await getKv().set(`watchlist:${userId}`, updated)
+  const r = await getClient()
+  await r.set(`watchlist:${userId}`, JSON.stringify(updated))
   return updated
 }
